@@ -4,83 +4,76 @@
 Build on the existing AD-Project lab to secure identities, enable monitoring and detection, simulate identity-based attacks, and implement Zero Trust identity controls.
 
 ## Lab Environment
-This project builds on the original **AD-Project** lab, re-using the same VMs and extending them for identity security monitoring and detection.
 
 - **Windows Server (Domain Controller)**
-  - Active Directory Domain Services (ADDS)  
-  - Group Policy Objects (GPOs)  
-  - **Sysmon** for detailed event logging  
-  - **Wazuh Agent** to forward logs  
+  - ADDS, GPOs
+  - **Sysmon** for detailed telemetry
+  - **Wazuh Agent** to forward logs
 
 - **Windows 10 Client(s)**
-  - Domain-joined workstation(s)  
-  - **Sysmon** for endpoint telemetry  
-  - **Wazuh Agent** to forward logs  
+  - Domain-joined
+  - **Sysmon**
+  - **Wazuh Agent**
 
 - **Ubuntu Server (Wazuh Manager)**
-  - Collects logs from agents  
-  - Applies detection rules mapped to MITRE ATT&CK  
-  - Forwards events to Kibana for visualization  
+  - Receives events from agents
+  - Applies detection rules (MITRE ATT&CK mapped)
+  - Forwards data to the dashboard
 
-- **Kibana Dashboard**
-  - Web interface for searching, alerting, and visualizing identity-related events  
+- **Wazuh Dashboard**
+  - Web UI for searching, alerting, and visualizing identity-related events
+
+- **(Optional) Wazuh Indexer**
+  - Backing datastore queried by the Wazuh Dashboard
+  - (Installed automatically in the all-in-one setup)
 
 - **Kali Linux (Attacker VM)**
-  - Used to simulate real-world identity attacks (Pass-the-Hash, Kerberoasting, token theft, phishing, etc.)  
-
-- **Optional Additional VMs**
-  - **Privileged Access Workstation (PAW)** for admin tasks  
-  - **FIDO2 / Passwordless Authentication test box**
+  - Used to simulate identity attacks (PtH, Kerberoasting, token theft, phishing)
 
 ## Skills Learned
-- Enforcing identity security controls in Active Directory (MFA, password policies, LAPS)  
-- Deploying and configuring **Wazuh Agents** to forward Sysmon and Windows Event logs  
-- Building **Kibana dashboards** to detect and visualize identity risks  
-- Simulating and detecting identity-based attacks (Pass-the-Hash, Kerberoasting, token theft)  
-- Applying **Zero Trust principles**: Conditional Access, Just-in-Time access, Privileged Access Workstations (PAW), and passwordless authentication  
-- Writing **identity governance policies** and **incident response playbooks** for compromised credentials and privilege abuse
+- Enforcing identity controls in AD (MFA, password policies, LAPS)
+- Deploying **Wazuh Agents** to collect Windows/Sysmon telemetry
+- Using the **Wazuh Dashboard** for detection, hunting, and visualization
+- Simulating and detecting identity-focused attacks
+- Applying Zero Trust (Conditional Access, JIT, PAW, passwordless)
+- Writing identity governance policies and incident response playbooks
 
 ## Tools Used
-- **Active Directory Domain Services (ADDS)**  
-- **Group Policy Objects (GPOs)** for enforcing security baselines  
-- **Sysmon** for endpoint telemetry  
-- **Wazuh Agents & Wazuh Manager** for log collection and detection  
-- **Kibana** for visualization and monitoring  
-- **Kali Linux** (Mimikatz, Impacket, Evilginx) for red team simulations  
-- **Local Administrator Password Solution (LAPS)**  
-- **draw.io** for network and lab topology diagrams
+- **Active Directory Domain Services (ADDS)**, **GPOs**
+- **Sysmon**
+- **Wazuh Manager**, **Wazuh Agent**
+- **Wazuh Dashboard** (and **Wazuh Indexer** in all-in-one)
+- **Kali Linux** (Mimikatz, Impacket, Evilginx)
+- **LAPS**
+- **draw.io** for lab diagrams
 
 ## Workflow Overview
+
 1. **Extend AD Lab**
-   - Add Local Administrator Password Solution (LAPS)  
-   - Enforce stricter password policies  
-   - Enable Multi-Factor Authentication (MFA)  
+   - LAPS, stricter password policies, MFA
 
 2. **Deploy Identity Monitoring**
-   - Configure Windows Event Logging and Sysmon  
-   - Forward events using the **Wazuh Agent**  
-   - Use Wazuh rules and **Kibana dashboards** to detect identity risks  
+   - Windows Event Logging + Sysmon
+   - Forward with **Wazuh Agent** to **Wazuh Manager**
+   - Detect and visualize in the **Wazuh Dashboard**
 
 3. **Simulate Identity Attacks**
-   - Execute attacks such as Pass-the-Hash, Kerberoasting, and token theft using Kali Linux  
-   - Observe what events are detected and how they surface in Wazuh/Kibana  
+   - Pass-the-Hash, Kerberoasting, token theft (Kali)
+   - Observe detections and investigate via the dashboard
 
 4. **Implement Zero Trust Defenses**
-   - Apply Conditional Access policies  
-   - Introduce Just-in-Time (JIT) administrative access  
-   - Deploy a Privileged Access Workstation (PAW)  
-   - Explore passwordless authentication (e.g., FIDO2, Windows Hello for Business)  
+   - Conditional Access, JIT admin, PAW, passwordless (e.g., FIDO2/WHfB)
 
 5. **Document Governance**
-   - Define Joiner/Mover/Leaver identity processes  
-   - Create Identity Incident Response (IR) playbooks  
-   - Build runbooks for SOC use
+   - Joiner/Mover/Leaver processes
+   - Identity IR playbooks and SOC runbooks
+
 
 ## Steps
 
-<img width="663" height="671" alt="Identity-Security-Project drawio" src="https://github.com/user-attachments/assets/268a16b5-fafd-4942-9287-db146bdabdff" />
+<img width="738" height="651" alt="Identity-Security-Project drawio" src="https://github.com/user-attachments/assets/b977b773-a4e6-4287-bede-ffa10570579c" />
 
-**Figure 1 – Identity Security Network Topology:** Similar setup to AD-Project however Splunk changed out for Wazuh with Kibana dashboard for visualisation.
+**Figure 1 – Identity Security Network Topology:** Similar setup to AD-Project however Splunk changed out for Wazuh which is using the all in one installation including Wazuh dashboard access.
 
 <img width="794" height="603" alt="Wazuh-NATNetwork" src="https://github.com/user-attachments/assets/ea49b024-4cd8-4fed-8d65-b5d91a598f05" />
 
@@ -103,12 +96,55 @@ This project builds on the original **AD-Project** lab, re-using the same VMs an
 
 **Figure 6 - Applying Firewall rules on DC:** ICMP has been allowed inbound for troubleshooting and TCP 1514 has been allowed outbound so the Wazuh agent can send data back to the Wazuh manager.
 
+<img width="864" height="67" alt="downloading and installing Wazuh" src="https://github.com/user-attachments/assets/d62a826c-13d7-49ea-a1ed-5b87232aa24a" />
 
+**Figure 7 - Downloading and running the Wazuh Installer:** 
 
+<img width="936" height="70" alt="wazuh manager status" src="https://github.com/user-attachments/assets/e2be0030-bfcb-40ed-986e-1cf7438e070e" />
+<img width="913" height="89" alt="wazuh dashboard status" src="https://github.com/user-attachments/assets/892ac551-f4ee-429c-857b-5ccbbac65997" />
+<img width="934" height="69" alt="wazuh indexer status" src="https://github.com/user-attachments/assets/aa95655f-0544-438a-9c5f-4f407fa3895d" />
 
+**Figure 8 - Verifying Wazuh services are active:** All 3 important services confirmed to be running
 
+<img width="801" height="355" alt="wazuh config" src="https://github.com/user-attachments/assets/575c8db6-b49b-45e9-a9cb-e1744303e7e1" />
 
+**Figure 9 - Config for Wazuh Dashboard:** YAML config configured for the Wazuh Dashboard
 
+<img width="950" height="695" alt="accessing wazuh dashboard" src="https://github.com/user-attachments/assets/cb60ff1f-ccea-4f8a-8e13-7dfd8eeee853" />
+
+**Figure 10 - Accessing the Wazuh Dashboard:** After confirming the services are running the dashboard can be accessed via https://192.168.10.20:5601
+
+<img width="1097" height="20" alt="installing wazuh agent on DC" src="https://github.com/user-attachments/assets/3adc805b-0136-4d3e-881a-0850fb7851fc" />
+
+**Figure 11 - Installing Wazuh agent on DC:** On the DC the latest stable version of the wazuh agent (at the time) is installed via silent powershell command
+
+<img width="317" height="231" alt="DC wazuh agent config" src="https://github.com/user-attachments/assets/32139103-13d7-4fea-b8cf-fbbd65ed1df5" />
+
+**Figure 12 - Verifying DC agent config:** Looking at the config file for the Wazuh agent confirms the silent install was successful
+
+<img width="602" height="461" alt="registering agent on Wazuh Manager" src="https://github.com/user-attachments/assets/7cfe65d5-8ae2-4dea-b65a-31b64f37d129" />
+
+**Figure 13 - Registering DC agent on Wazuh Manager:** The DC now needs to be added into Wazuh Manager and then an 'agent key' can be generated which is then imported onto the DC
+
+<img width="772" height="87" alt="DC client keys" src="https://github.com/user-attachments/assets/7a5e2f8e-e1c1-477f-906f-48152d49837a" />
+<img width="865" height="42" alt="DC client keys wazuh manager" src="https://github.com/user-attachments/assets/b3076051-1433-460e-8da4-32724f49f632" />
+
+**Figure 14 - Agent key on DC and Wazuh Manager:** The agent key was added to the DC and then it replicated onto Wazuh Manager, this was confirmed using the command '/var/ossec/etc/client.keys'
+
+<img width="1389" height="186" alt="DC online in wazuh dashboard" src="https://github.com/user-attachments/assets/ac99af7d-7da8-4f81-a31a-f1e86ed9acca" />
+
+**Figure 15 - DC agent online in Wazuh Dashboard:** When loggging into the Wazuh Dashboard going to Agents Summary shows 1 active agent which is the DC that has just been configured.
+
+<img width="771" height="72" alt="Win10 client keys" src="https://github.com/user-attachments/assets/a13ff637-8c7f-45a6-ad2f-097884c6c639" />
+<img width="952" height="64" alt="Win10 client keys wazuh" src="https://github.com/user-attachments/assets/33da6640-a99e-4b2c-ac44-0a4a476f36f9" />
+
+**Figure 16 - Windows 10 client keys:** The same process for agent install on the DC has been completed on the Windows 10 client as well. Entries are the same on both client.keys files for the Windows 10 client and on Wazuh Manager.
+
+<img width="1385" height="229" alt="Win10 agent status" src="https://github.com/user-attachments/assets/ba430454-d472-4181-bacf-89a6ef580efb" />
+
+**Figure 17 - Windows 10 cleint online in Wazuh Dashboard:** The Wazuh Dahsboard now shows 2 active agents on the Agents Summary screen and when clicking into this it confirms the DC (as setup before) and now the Windows 10 client. Both reproting in from their allocated IP addresses.
+
+**Figure 18 - 
 
 
 
@@ -118,10 +154,9 @@ This project builds on the original **AD-Project** lab, re-using the same VMs an
 
 
 ## Outcomes
-- Hardened Active Directory environment with improved identity security controls  
-- Successful deployment of a SIEM pipeline using **Wazuh + Kibana** instead of Splunk, demonstrating tool diversity  
-- Detection and visualization of real-world identity attack techniques mapped to **MITRE ATT&CK**  
-- Practical application of **Zero Trust Identity** concepts in a lab setting  
-- Documentation of governance processes and **SOC-ready playbooks** for identity-related incidents  
-- Enhanced portfolio project showcasing both **blue team defense** and **red team attack simulation** skills
+- Hardened AD environment with modern identity controls
+- Working SIEM pipeline using **Wazuh Manager + Wazuh Dashboard** (vendor diversity from Splunk)
+- Detections mapped to **MITRE ATT&CK** with real attack simulations
+- Practical Zero Trust identity protections in a lab
+- Governance docs and **SOC-ready playbooks** for identity incidents
 
