@@ -142,9 +142,13 @@ Build on the existing AD-Project lab to secure identities, enable monitoring and
 
 <img width="1385" height="229" alt="Win10 agent status" src="https://github.com/user-attachments/assets/ba430454-d472-4181-bacf-89a6ef580efb" />
 
-**Figure 17 - Windows 10 cleint online in Wazuh Dashboard:** The Wazuh Dahsboard now shows 2 active agents on the Agents Summary screen and when clicking into this it confirms the DC (as setup before) and now the Windows 10 client. Both reproting in from their allocated IP addresses.
+**Figure 17 - Windows 10 client online in Wazuh Dashboard:** The Wazuh Dahsboard now shows 2 active agents on the Agents Summary screen and when clicking into this it confirms the DC (as setup before) and now the Windows 10 client. Both reproting in from their allocated IP addresses.
 
-**Figure 18 - 
+<img width="613" height="255" alt="image" src="https://github.com/user-attachments/assets/cc8f69ac-a5d0-45f0-8a94-3b2ef148ee05" />
+
+**Figure 18 - Sysmon:** For both VMs Sysmon was also reinstalled as both machines had existing Sysmon config from the previous AD lab. In this lab the Sysmon config being used is from SwiftOnSecuritys github page. Sysmon itself along with the config file were placed into C:\Tools\Sysmon on both VMs.
+
+
 
 
 
