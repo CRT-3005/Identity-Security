@@ -162,6 +162,9 @@ Build on the existing AD-Project lab to secure identities, enable monitoring and
 
 **Figure 21 - Security Event ID 4625:** Validating security logs would be generated for incorrect account or password details within Event Viewer and in Wazuh.
 
+--- Check why event ID 1 and 3 not showing in Wazuh
+
+
 
 ## Troubleshooting
 - [Filebeat: not shipping Wazuh alerts](./filebeat-troubleshooting.md)
