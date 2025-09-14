@@ -154,6 +154,8 @@ Build on the existing AD-Project lab to secure identities, enable monitoring and
 
 
 
+## Troubleshooting
+- [Filebeat: not shipping Wazuh alerts](./filebeat-troubleshooting.md)
 
 
 
