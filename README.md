@@ -146,12 +146,21 @@ Build on the existing AD-Project lab to secure identities, enable monitoring and
 
 <img width="613" height="255" alt="image" src="https://github.com/user-attachments/assets/cc8f69ac-a5d0-45f0-8a94-3b2ef148ee05" />
 
-**Figure 18 - Sysmon:** For both VMs Sysmon was also reinstalled as both machines had existing Sysmon config from the previous AD lab. In this lab the Sysmon config being used is from SwiftOnSecuritys github page. Sysmon itself along with the config file were placed into C:\Tools\Sysmon on both VMs.
+**Figure 18 - Sysmon Install:** For both VMs Sysmon was also reinstalled as both machines had existing Sysmon config from the previous AD lab. In this lab the Sysmon config being used is from SwiftOnSecuritys github page https://github.com/SwiftOnSecurity/sysmon-config. Sysmon itself along with the config file were placed into C:\Tools\Sysmon on both VMs.
 
+<img width="488" height="91" alt="image" src="https://github.com/user-attachments/assets/1cea89fe-4448-49e9-a52b-9db9816f55dc" />
 
+**Figure 19 - Sysmon added to ossec.conf file:** Detailed telemetry for Sysmon
 
+<img width="391" height="598" alt="image" src="https://github.com/user-attachments/assets/33fda076-86c6-46ed-9f39-90de41c20b9c" />
+<img width="384" height="594" alt="image" src="https://github.com/user-attachments/assets/1554e10c-e7d7-47ac-b0e7-86a9d9c39962" />
 
+**Figure 20 - Sysmon detection tests via Event Viewer:** Generated Sysmon Event ID 1 by opening notepad.exe and Sysmon Event ID 3 by doing a Test-netConnection 8.8.8.8 -Port 53.
 
+<img width="388" height="612" alt="image" src="https://github.com/user-attachments/assets/c68a549f-dd2d-415c-aa7a-313ab90ed2fd" />
+<img width="859" height="707" alt="image" src="https://github.com/user-attachments/assets/c17ef2a8-1e62-4e3d-85cb-48bcdfaf353b" />
+
+**Figure 21 - Security Event ID 4625:** Validating security logs would be generated for incorrect account or password details within Event Viewer and in Wazuh.
 
 
 ## Troubleshooting
