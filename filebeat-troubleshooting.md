@@ -1,5 +1,7 @@
 # Filebeat Troubleshooting (Wazuh AIO)
 
+*[Back to main README](./README.md)*
+
 This page documents how I fixed Filebeat when it was not shipping Wazuh alerts to the Indexer in my all-in-one Wazuh lab (Ubuntu Manager + Indexer + Dashboard on the same host).
 
 ## Objective
