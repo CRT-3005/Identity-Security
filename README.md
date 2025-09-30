@@ -160,7 +160,7 @@ Build on the existing AD-Project lab to secure identities, enable monitoring and
 <img width="388" height="612" alt="image" src="https://github.com/user-attachments/assets/c68a549f-dd2d-415c-aa7a-313ab90ed2fd" />
 <img width="859" height="707" alt="image" src="https://github.com/user-attachments/assets/c17ef2a8-1e62-4e3d-85cb-48bcdfaf353b" />
 
-**Figure 21 - Security Event ID 4625:** Validating security logs would be generated for incorrect account or password details within Event Viewer and in Wazuh.
+**Figure 21 - Security Event ID 4625:** Validating that security logs are generated for incorrect account or password details within Event Viewer and in Wazuh.
 
 --- Check why event ID 1 and 3 not showing in Wazuh
 
