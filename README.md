@@ -18,9 +18,7 @@ The lab environment replicates a small enterprise network to simulate identity a
 All systems operate within the same internal network segment.  
 Splunk Universal Forwarders are deployed on **ADDC01** and **Win10Client** to forward Windows Event Logs and Sysmon logs to **SplunkServer** over TCP port **9997**.
 
-An updated network topology diagram will reflect Splunk replacing Wazuh as the central log aggregation point.
-
-![Network Topology Placeholder](images/network_topology.png)
+<img width="668" height="650" alt="Identity-Security-Project drawio" src="https://github.com/user-attachments/assets/c3a53811-9936-403d-8c00-c92c57458f50" />
 
 ## Skills Learned
 - Configuration of Splunk Universal Forwarders for Windows event ingestion  
