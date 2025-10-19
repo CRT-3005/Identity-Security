@@ -63,20 +63,24 @@ Splunk Universal Forwarders are deployed on **ADDC01** and **Win10Client** to fo
 
 ## Steps
 
-### Step 1 – Configure Splunk Data Ingestion
-Splunk Universal Forwarders were configured on both **ADDC01** and **Win10Client** to forward the following logs:
-- **Windows Security Logs** (authentication activity – Event IDs 4624 and 4625)
-- **Sysmon Logs** (process and network telemetry – Event IDs 1 and 3)
+<img width="517" height="748" alt="image" src="https://github.com/user-attachments/assets/2c67d9ee-b0bf-43b8-bc8c-4b1d51b6bd9c" /> <img width="516" height="773" alt="image" src="https://github.com/user-attachments/assets/64daf43d-29b7-4140-becc-8fe3dba3e8a8" />
 
-Configuration details and setup steps are documented in the [Active Directory Project](https://github.com/CRT-3005/AD-Project).
+**Figure 1 – Changing inputs.conf file :** Created new `inputs.conf` files for both the **Domain Controller** and **Windows 10 client** 
+The configuration ensures Windows Event Logs (Security, System, Application) and Sysmon data are forwarded to the Splunk indexer.  
+Each host uses the proper indexes (`identity`, `sysmon`, `endpoint`) for clean separation of telemetry.
 
----
+<img width="634" height="109" alt="image" src="https://github.com/user-attachments/assets/4054d066-0f91-4d3d-8dd7-b042c5eedb7f" /> <img width="624" height="91" alt="image" src="https://github.com/user-attachments/assets/59aacf4f-bd53-41c5-a3c1-a685b8ce8c31" />
 
-### Step 2 – Failed Logon Detection (Event ID 4625)
-**Objective:** Detect repeated failed logon attempts that may indicate brute-force or credential stuffing activity.  
+**Figure 2 – inputs.conf Location:**  
+Instead of using the default `C:\Program Files\SplunkUniversalForwarder\etc\system\local\inputs.conf`, the configuration files were moved into new app folders:
+C:\Program Files\SplunkUniversalForwarder\etc\apps\IdentityInputs-DC\local
+C:\Program Files\SplunkUniversalForwarder\etc\apps\IdentityInputs-Workstation\local
 
-**Example Splunk Search:**
-```spl
-index=windows EventCode=4625
-| stats count by user, ComputerName, Logon_Type, IpAddress
-| where count > 5
+<img width="661" height="244" alt="image" src="https://github.com/user-attachments/assets/2ee95f5b-58e5-4263-ab62-ed2eb979e736" />
+
+**Figure 3 – app.conf Metadata File:**  
+An `app.conf` file was created in each app’s `default` folder.  
+This defines the app metadata (author, description, version) and ensures Splunk recognizes the app structure properly. Located in C:\Program Files\SplunkUniversalForwarder\etc\apps\IdentityInputs-DC\default & C:\Program Files\SplunkUniversalForwarder\etc\apps\IdentityInputs-Workstation\default
+
+
+
