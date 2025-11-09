@@ -1,4 +1,4 @@
-<img width="302" height="217" alt="image" src="https://github.com/user-attachments/assets/6b237158-13c3-4d5a-b65e-99c5f663056a" /># Identity Security Project
+# Identity Security Project
 
 ## Objective
 The objective of this lab is to demonstrate identity-based threat detection and monitoring using **Splunk Enterprise** as the SIEM platform.  
