@@ -134,4 +134,4 @@ After installing the **Splunk Add-on for Microsoft Windows**, key fields such as
 index=sysmon sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" earliest=-15m
 | stats count by EventCode, Image
 
-**Figure 12 - 
+**Figure 12 - Move onto attacks and detection
