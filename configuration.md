@@ -1,5 +1,8 @@
 # Configuration
 
+This document details the full setup and configuration steps for the Identity Security project environment.  
+It covers the preparation of Splunk, Windows hosts, Sysmon, and log forwarding pipelines prior to the attack and detection phase.
+
 <img width="536" height="579" alt="image" src="https://github.com/user-attachments/assets/751644ca-f84d-4133-a614-b9129915c264" />
 
 **Figure 1 – Changing inputs.conf file :** 
@@ -71,12 +74,52 @@ After installing the **Splunk Add-on for Microsoft Windows**, key fields such as
 index=sysmon sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" earliest=-15m
 | stats count by EventCode, Image
 
-*Before moving onto attacks and detections the Windows 10 client VM was updated to Windows 11*
+---
+
+## Windows 11 Client Upgrade
+
+Before beginning identity attack simulations, the Windows 10 client VM was upgraded to **Windows 11** to reflect modern enterprise configurations and improve telemetry fidelity.
+
+### Hardware Adjustments Required
+
+| Setting | Old | Updated | Reason |
+|---------|-----|---------|--------|
+| **CPU Cores** | 1 | 2–4 | Windows 11 performance & compatibility |
+| **RAM** | 2–4 GB | 8 GB | Windows 11 minimum requirement |
+| **Firmware** | BIOS | UEFI (Enable EFI) | Mandatory for Windows 11 |
+| **TPM** | N/A | Bypassed | VirtualBox doesn't natively support TPM 2.0 |
+| **Disk** | 50–60 GB | Sufficient | Required for upgrade |
+
+Configured via:
+
+**VirtualBox → Settings → System → Motherboard / Processor**
+
+### Upgrade Process
+
+1. Downloaded *Windows 11 Installation Assistant*  
+2. Passed compatibility checks after VM hardware changes  
+3. Ran in-place upgrade  
+4. Validation steps performed post-upgrade
+
+### Post-Upgrade Validation
+
+- **Splunk Universal Forwarder** kept running  
+- Logs continued forwarding to indexer  
+- Sysmon remained operational  
+- Event IDs (4624, 4625, Kerberos, Sysmon) generated normally  
+- Host maintained domain membership & connectivity  
+
+This ensured the Windows 11 endpoint still produced full identity telemetry.
 
 ---
 
-### 🔐 Identity Attack Detection & Analysis
-Kerberos password spraying (Kerbrute), Windows Security Event analysis, and Wazuh/Splunk detection logic.
+## Next Steps
+
+### 🔐 Next Phase – Identity Attack Detection
+
+With the environment fully configured and validated across both hosts (ADDC01 and Windows 10/11 Client),  
+the next phase focuses on simulating real-world identity attacks and analyzing Kerberos, Sysmon, and  
+Windows Security Event telemetry within the SIEM.
 
 👉 **[identity-attack-detections.md](https://github.com/CRT-3005/Identity-Security/blob/95c5cb6af5012e4195120806bacf33cb2670d85b/identity-attack-detections.md)**
 
