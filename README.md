@@ -20,7 +20,7 @@ It expands upon the [Active Directory Project](https://github.com/CRT-3005/AD-Pr
 
 The lab environment replicates a small enterprise network designed to simulate identity attacks and corresponding detections.
 
-<img width="668" height="650" alt="Identity-Security-Project drawio" src="https://github.com/user-attachments/assets/60b1b91c-0bcd-4537-ad26-8a5a4577fdc9" />
+<img width="668" height="655" alt="Identity-Security-Project drawio" src="https://github.com/user-attachments/assets/86a1ef93-742f-4e0c-942f-63d2f7bbbc55" />
 
 **Domain:** ADProject.local  
 **Network:** 192.168.10.0/24  
