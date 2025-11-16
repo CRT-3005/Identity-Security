@@ -18,7 +18,7 @@ The following diagram represents the lab network used for this project:
 **Network:** 192.168.10.0/24  
 **Splunk Server:** 192.168.10.10  
 **Active Directory:** 192.168.10.7  
-**Windows 10 Client:** 192.168.10.100
+**Windows 10/11 Client:** 192.168.10.100
 **Attacker (Kali Linux):** 192.168.10.250  
 
 | Hostname | Role | Operating System | Purpose |
@@ -134,4 +134,7 @@ After installing the **Splunk Add-on for Microsoft Windows**, key fields such as
 index=sysmon sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" earliest=-15m
 | stats count by EventCode, Image
 
-**Figure 12 - Move onto attacks and detection
+*Before moving onto attacks and detections the Windows 10 client VM was updated to Windows 11*
+
+
+
