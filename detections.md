@@ -6,8 +6,6 @@ Splunk was then used to identify and analyze the Kerberos authentication events 
 
 ---
 
-# **Figure 12 – Kerberos Password Spray Detection (Kerbrute)**
-
 ## **Objective**
 To simulate and detect a Kerberos-based identity attack—specifically, a **Kerberos AS-REQ (TGT request)** triggered by an invalid password attempt—using **Kerbrute** from the attacker machine (192.168.10.250).  
 This demonstrates how identity-centric authentication activity appears in Splunk and how analysts can detect credential-guessing attempts.
@@ -32,7 +30,7 @@ kerbrute passwordspray \
 
 <img width="773" height="323" alt="image" src="https://github.com/user-attachments/assets/9072fc05-f775-470f-924a-b6640ef1b684" />
 
-### **Figure 12A – Kerbrute Output**
+### **Figure 1 – Kerbrute Output**
 
 The following output confirms Kerbrute successfully contacted the KDC running on the Domain Controller (192.168.10.7:88) and attempted authentication using an invalid password.
 
@@ -65,7 +63,7 @@ index=identity host=ADDC01 source="WinEventLog:Security" earliest=-10m
 
 <img width="1882" height="795" alt="KerberosSplunkLogs" src="https://github.com/user-attachments/assets/a8066f04-97cf-41a3-b736-f79cce8a4b0d" />
 
-### **Figure 12B – Splunk Kerberos Detection**
+### **Figure 2 – Splunk Kerberos Detection**
 
 Splunk successfully identified **EventID 4768**, showing that the Domain Controller processed the Kerberos TGT request made during the attack.
 
