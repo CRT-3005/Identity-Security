@@ -73,4 +73,7 @@ index=sysmon sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" ea
 
 *Before moving onto attacks and detections the Windows 10 client VM was updated to Windows 11*
 
-identity-attack-detections.md
+### 🔐 Identity Attack Detection & Analysis
+Kerberos password spraying (Kerbrute), Windows Security Event analysis, and Splunk detection logic.
+
+[identity-attack-detections.md](https://github.com/CRT-3005/Identity-Security/blob/95c5cb6af5012e4195120806bacf33cb2670d85b/identity-attack-detections.md)
