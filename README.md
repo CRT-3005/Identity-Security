@@ -61,7 +61,7 @@ Splunk Universal Forwarders are deployed on **ADDC01** and **Win10Client** to fo
 
 ---
 
-## Steps
+# Configuration
 
 <img width="536" height="579" alt="image" src="https://github.com/user-attachments/assets/751644ca-f84d-4133-a614-b9129915c264" />
 
@@ -135,6 +135,4 @@ index=sysmon sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" ea
 | stats count by EventCode, Image
 
 *Before moving onto attacks and detections the Windows 10 client VM was updated to Windows 11*
-
-
 
