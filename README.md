@@ -60,3 +60,19 @@ Splunk Universal Forwarders are deployed on **ADDC01** and **Win10Client** to fo
 5. **Alerting and Visualization:** Alerts and dashboards display notable activity for analysis.  
 
 ---
+
+## 📘 Project Documentation
+
+### 🔧 Environment Setup & Configuration
+Full setup of the Wazuh environment, NAT networking, agent installation, Sysmon configuration, and validation steps.
+
+👉 **[[Configuration Guide](configuration/Configuration.md)](https://github.com/CRT-3005/Identity-Security/blob/11b2af59949cac0adcf1c4e61a95c59b692b6fa3/configuration.md)**
+
+---
+
+### 🔐 Identity Attack Detection & Analysis
+Kerberos password spraying (Kerbrute), Windows Security Event analysis, and Wazuh/Splunk detection logic.
+
+👉 [**[Identity Attack Detection](detections/Identity-Attack-Detection.md)](https://github.com/CRT-3005/Identity-Security/blob/11b2af59949cac0adcf1c4e61a95c59b692b6fa3/identity-attack-detections.md)**
+
+---
