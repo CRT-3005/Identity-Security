@@ -72,3 +72,5 @@ index=sysmon sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" ea
 | stats count by EventCode, Image
 
 *Before moving onto attacks and detections the Windows 10 client VM was updated to Windows 11*
+
+https://github.com/CRT-3005/Identity-Security/blob/main/identity-attack-detections.md
