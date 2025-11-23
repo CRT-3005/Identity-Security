@@ -116,4 +116,4 @@ This test demonstrates full end-to-end detection of a Kerberos-based identity at
 3. **Splunk** ingests and parses the Security log  
 4. **Analyst** identifies suspicious Kerberos authentication behavior  
 
-This completes the identity threat simulation and validates Splunk’s capability to detect authentication anomalies within a Windows Active Directory environment.
+---
