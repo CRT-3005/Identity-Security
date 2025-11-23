@@ -117,3 +117,144 @@ This test demonstrates full end-to-end detection of a Kerberos-based identity at
 4. **Analyst** identifies suspicious Kerberos authentication behavior  
 
 ---
+
+# 🔐 NTLM Password Spray Detection
+
+Following the Kerberos authentication test, a second identity-focused attack was simulated, this time targeting **NTLM authentication**.  
+This scenario demonstrates Splunk’s ability to detect credential-guessing attacks across both major Windows authentication protocols used in Active Directory.
+
+While Kerberos failures generate **4768/4771**, NTLM authentication failures generate **EventID 4625**, which can reveal broad password spraying attempts across multiple identities.
+
+---
+
+## **Objective**
+
+To execute and detect an NTLM password spray attack using **CrackMapExec (CME)** from the attacker machine (192.168.10.250), and verify that Splunk can ingest and analyze the resulting Windows Security events.
+
+This demonstrates identity-focused detection coverage across NTLM authentication pathways.
+
+---
+
+## **Attack Execution (Kali Linux)**
+
+A single-password spray was performed against several Active Directory accounts using CrackMapExec over SMB:
+
+```bash
+crackmapexec smb 192.168.10.7 \
+  -d ADProject.local \
+  -u /tmp/ad_users.txt \
+  -p Winter2025!
+```
+
+<img width="1277" height="149" alt="NTLM-spray-CME" src="https://github.com/user-attachments/assets/338cf322-08ea-425c-979a-72ce1aa9cb6e" />
+
+### **Figure 1 – CrackMapExec NTLM Password Spray Output**
+
+CrackMapExec attempted authentication against six domain users using a single password (`Winter2025!`) and returned **STATUS_LOGON_FAILURE** for each of them:
+
+- **JNeutron**  
+- **JBravo**  
+- **SCheeks**  
+- **PStar**  
+- **HMontana**  
+- **VDinkley**
+
+All failures originated from **192.168.10.250**, consistent with a classic NTLM password spray.
+
+---
+
+## **Log Ingestion Adjustment**
+
+Because the default Security sourcetype was filtering certain events, the Domain Controller’s Universal Forwarder was updated to ensure all Security events were forwarded to Splunk:
+
+```ini
+[WinEventLog://Security]
+disabled = 0
+renderXml = true
+sourcetype = WinEventLog:SecurityAll
+index = identity
+```
+
+This custom sourcetype reliably forwarded **EventID 4625** for NTLM logon failures.
+
+---
+
+## **Extracting NTLM Failures From XML**
+
+Since Security logs were ingested in XML format (`renderXml = true`), custom extraction was required to pull out the username and source IP from `<Data>` fields.
+
+The SPL below extracts:
+
+- EventID  
+- TargetUserName  
+- IpAddress  
+
+```spl
+index=identity sourcetype="WinEventLog:SecurityAll" earliest=-15m
+| rex field=_raw "EventID>(?<EventID>\d+)<"
+| search EventID=4625
+| rex field=_raw "Data Name='TargetUserName'>(?<TargetUserName>[^<]+)<"
+| rex field=_raw "Data Name='IpAddress'>(?<IpAddress>[^<]+)<"
+| table _time, EventID, TargetUserName, IpAddress
+| sort -_time
+```
+
+<img width="1885" height="545" alt="image" src="https://github.com/user-attachments/assets/d443b42d-060e-48dd-abdd-d580dcf062e4" />
+
+### **Figure 2 – Extracted NTLM Authentication Failures**
+
+This output confirms:
+
+- Six unique domain accounts failed authentication  
+- All failures originated from **192.168.10.250**  
+- All produced **EventID 4625**  
+- All occurred within the same second, a strong indication of a spray attempt  
+
+---
+
+## 🔍 **NTLM Password Spray Detection Logic**
+
+To detect NTLM password spray activity, a correlation rule was built to identify:
+
+- Multiple authentication failures  
+- From the same source IP  
+- Targeting multiple distinct accounts  
+- Inside a short time window  
+
+```spl
+index=identity sourcetype="WinEventLog:SecurityAll" earliest=-15m
+| rex field=_raw "EventID>(?<EventID>\d+)<"
+| search EventID=4625
+| rex field=_raw "Data Name='TargetUserName'>(?<TargetUserName>[^<]+)<"
+| rex field=_raw "Data Name='IpAddress'>(?<IpAddress>[^<]+)<"
+| bucket _time span=5m
+| stats dc(TargetUserName) as unique_accounts count by IpAddress, _time
+| where unique_accounts >= 3
+| sort -_time
+```
+
+If an attacker fails to authenticate against three or more distinct accounts within five minutes, this SPL flags the activity as a password spray.
+
+---
+
+## **MITRE ATT&CK Mapping**
+
+| Technique ID | Name | Description |
+|--------------|------|-------------|
+| **T1110.003** | Password Spraying | Testing a single password across many accounts |
+| **T1078** | Valid Accounts | Potential follow-on if credentials are obtained |
+| **TA0006** | Credential Access | Attempting to guess valid passwords |
+
+---
+
+## **Summary**
+
+This NTLM attack validates Splunk’s ability to detect identity-focused threats across multiple authentication protocols:
+
+- **CrackMapExec** performed a real-world NTLM password spray  
+- **EventID 4625** failures were ingested via a custom Security sourcetype  
+- **Regex extraction** parsed usernames and IPs from XML logs  
+- A **behaviour based correlation detection** identified the spray  
+- Together with the Kerberos test, this provides complete authentication-layer visibility  
+
+This scenario reinforces the importance of SIEM-driven identity security monitoring and shows how Active Directory authentication activity can be analyzed to detect adversarial behaviour.
