@@ -148,7 +148,7 @@ crackmapexec smb 192.168.10.7 \
 
 <img width="1277" height="149" alt="NTLM-spray-CME" src="https://github.com/user-attachments/assets/338cf322-08ea-425c-979a-72ce1aa9cb6e" />
 
-### **Figure 1 – CrackMapExec NTLM Password Spray Output**
+### **Figure 3 – CrackMapExec NTLM Password Spray Output**
 
 CrackMapExec attempted authentication against six domain users using a single password (`Winter2025!`) and returned **STATUS_LOGON_FAILURE** for each of them:
 
@@ -201,7 +201,7 @@ index=identity sourcetype="WinEventLog:SecurityAll" earliest=-15m
 
 <img width="1885" height="545" alt="image" src="https://github.com/user-attachments/assets/d443b42d-060e-48dd-abdd-d580dcf062e4" />
 
-### **Figure 2 – Extracted NTLM Authentication Failures**
+### **Figure 4 – Extracted NTLM Authentication Failures**
 
 This output confirms:
 
@@ -258,3 +258,37 @@ This NTLM attack validates Splunk’s ability to detect identity-focused threats
 - Together with the Kerberos test, this provides complete authentication-layer visibility  
 
 This scenario reinforces the importance of SIEM-driven identity security monitoring and shows how Active Directory authentication activity can be analyzed to detect adversarial behaviour.
+
+## 🔍 Detection Summary Table
+
+This table compares the two identity-based attacks executed in the lab and summarizes how each was detected within Splunk.
+
+| **Detection Type** | **Authentication Protocol** | **Event IDs Observed** | **Attack Tool** | **Target Accounts** | **Splunk Detection Logic** | **What It Reveals** |
+|--------------------|-----------------------------|--------------------------|------------------|-----------------------|-----------------------------|-----------------------|
+| **Kerberos Password Spray** | Kerberos | 4768, 4771 | Kerbrute | Single-user spray (`JNeutron`) | Regex-assisted extraction of Kerberos AS-REQ failures from Security XML | TGT requests with incorrect passwords, evidence of Kerberos authentication probing |
+| **NTLM Password Spray** | NTLM | 4625 | CrackMapExec | Multi-user spray (`6 accounts`) | Correlation search counting distinct usernames per source IP within 5 minutes | Broad authentication failures across multiple accounts, evidence of automated NTLM spraying |
+
+---
+
+## ⭐ Key Takeaways
+
+- **Identity-layer attacks are noisy when monitored correctly.**
+  Even simple password spray attempts generate rich authentication telemetry across Kerberos and NTLM.
+
+- **Kerberos and NTLM behave differently in logs.**
+  Kerberos relies on AS-REQ failures (4768/4771), while NTLM produces failed logons (4625). Both require different SPL extraction techniques.
+
+- **XML-formatted Security logs require custom field extraction.**
+  Using `renderXml = true` improves fidelity but requires regex for fields like `TargetUserName` and `IpAddress`.
+
+- **Detection relies on correlation, not single events.**
+  Password sprays only become obvious when counting distinct usernames targeted within a time window.
+
+- **Splunk Universal Forwarder configuration matters.**
+  A custom sourcetype (`WinEventLog:SecurityAll`) ensured that no Security events were filtered out.
+
+- **Realistic adversary emulation strengthens detection engineering.**
+  Using Kerbrute and CrackMapExec mirrors real attacker behaviour and validates detection logic under real-world conditions.
+
+- **This lab demonstrates full identity-attack visibility.**
+  Both Kerberos and NTLM pathways were monitored, ingested, extracted, and correlated inside Splunk.
