@@ -49,6 +49,8 @@ Enable:
 - Do not allow password expiration longer than required → **Enabled**
 - Enable password encryption → **Enabled**
 
+<img width="1147" height="334" alt="image" src="https://github.com/user-attachments/assets/d8623067-1609-473b-a07b-7117dbdc0e2c" />
+
 ---
 
 ## ✅ Step 3 – Delegate AD Permissions
@@ -57,12 +59,9 @@ Domain-level permission:
 ```powershell
 Set-LapsADComputerSelfPermission -Identity "DC=ADPROJECT,DC=local"
 ```
+<img width="747" height="82" alt="image" src="https://github.com/user-attachments/assets/c276db41-6cd3-451e-aa76-c0432f466806" />
 
-OU-based permissions:
-```powershell
-Set-LapsADComputerSelfPermission -Identity "OU=IT,DC=ADPROJECT,DC=local"
-Set-LapsADComputerSelfPermission -Identity "OU=HR,DC=ADPROJECT,DC=local"
-```
+*Figure 3
 
 ---
 
@@ -72,6 +71,10 @@ Set-LapsADComputerSelfPermission -Identity "OU=HR,DC=ADPROJECT,DC=local"
 gpupdate /force
 Invoke-LapsPolicyProcessing -Verbose
 ```
+
+<img width="530" height="271" alt="LAPS - Password backup" src="https://github.com/user-attachments/assets/b0147ae8-ac73-45a2-91dd-5160a452c1dd" />
+
+
 
 Successful output indicates AD write permissions and policy application.
 
@@ -93,6 +96,10 @@ ComputerName  Password     ExpirationTimestamp
 TARGET-PC     Xy3$...      2026-01-05 12:28:10
 ```
 
+
+<img width="451" height="303" alt="image" src="https://github.com/user-attachments/assets/abd59935-438e-43a4-a7cf-8885fd164a54" />
+
+
 ---
 
 ## 🔍 LAPS Event Logging
@@ -109,7 +116,10 @@ Key events:
 - **10018** – Password successfully backed up  
 - **10019** – Password rotation  
 - **10033** – Policy validation  
-- **10055** – Encryption issues  
+- **10055** – Encryption issues
+
+<img width="676" height="751" alt="image" src="https://github.com/user-attachments/assets/680f2787-5f1c-48d6-a6c0-4348206ec071" />
+
 
 ---
 
