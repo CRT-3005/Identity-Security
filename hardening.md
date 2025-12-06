@@ -51,6 +51,9 @@ Enable:
 
 <img width="1147" height="334" alt="image" src="https://github.com/user-attachments/assets/d8623067-1609-473b-a07b-7117dbdc0e2c" />
 
+**Figure 1 – LAPS Group Policy Configuration:** 
+Password backup, rotation settings, and encryption configured in the Default Domain Policy.
+
 ---
 
 ## ✅ Step 3 – Delegate AD Permissions
@@ -61,7 +64,8 @@ Set-LapsADComputerSelfPermission -Identity "DC=ADPROJECT,DC=local"
 ```
 <img width="747" height="82" alt="image" src="https://github.com/user-attachments/assets/c276db41-6cd3-451e-aa76-c0432f466806" />
 
-*Figure 3
+**Figure 2 - AD Permission Delegation:**
+Computers in the domain are granted the right to update their own LAPS password attributes.
 
 ---
 
@@ -72,9 +76,10 @@ gpupdate /force
 Invoke-LapsPolicyProcessing -Verbose
 ```
 
-<img width="530" height="271" alt="LAPS - Password backup" src="https://github.com/user-attachments/assets/b0147ae8-ac73-45a2-91dd-5160a452c1dd" />
+<img width="530" height="353" alt="image" src="https://github.com/user-attachments/assets/3840fe0e-67df-42a8-becd-0308ae3be885" />
 
-
+**Figure 3 - LAPS Policy Processing:**
+TARGET-PC successfully processes the LAPS policy and writes its password attributes to AD.
 
 Successful output indicates AD write permissions and policy application.
 
@@ -96,9 +101,10 @@ ComputerName  Password     ExpirationTimestamp
 TARGET-PC     Xy3$...      2026-01-05 12:28:10
 ```
 
-
 <img width="451" height="303" alt="image" src="https://github.com/user-attachments/assets/abd59935-438e-43a4-a7cf-8885fd164a54" />
 
+**Figure 4 – LAPS Password Retrieval in PowerShell:**
+The rotated password and its expiration timestamp are securely stored in AD.
 
 ---
 
@@ -113,13 +119,23 @@ Event Viewer → Applications and Services Logs
 
 Key events:
 
-- **10018** – Password successfully backed up  
-- **10019** – Password rotation  
-- **10033** – Policy validation  
+- **10018** – Password successfully backed up   
 - **10055** – Encryption issues
 
 <img width="676" height="751" alt="image" src="https://github.com/user-attachments/assets/680f2787-5f1c-48d6-a6c0-4348206ec071" />
 
+**Figure 5 - LAPS Operational Log (Events 10018 & 10055):**
+LAPS successfully logs EventID 10018 (password backup) and 10055 (encrypted password storage). Other event IDs such as 10019 (password rotation) will only appear once the configured password expiration timestamp has passed or when a manual rotation is forced.
+
+Alternate events:
+- **10019** – Password rotation  
+- **10033** – Policy validation 
+
+**Event 10019** - This event logs only under certain OS builds or when LAPS detects a policy inconsistency.
+A healthy system with valid configuration may never generate EventID 10033.
+
+**Event 10055 - This event logs only under certain OS builds or when LAPS detects a policy inconsistency.
+A healthy system with valid configuration may never generate EventID 10033.
 
 ---
 
