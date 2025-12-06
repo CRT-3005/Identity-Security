@@ -1,0 +1,149 @@
+# 🔐 Windows LAPS Deployment & Hardening
+
+Windows Local Administrator Password Solution (LAPS) was deployed and configured to strengthen identity security within the Active Directory lab environment.  
+This control ensures that **each Windows machine receives a unique, automatically rotated local administrator password**, reducing the risk of lateral movement and credential reuse by attackers.
+
+---
+
+## 📝 Why LAPS Matters
+Without LAPS, organizations often reuse the same local administrator password across multiple systems.  
+If an attacker compromises *one* workstation, they automatically gain privileged access to *all* workstations.
+
+LAPS mitigates this risk by ensuring:
+
+- Unique per-device administrator passwords  
+- Automatic password rotation  
+- Secure AD-backed password storage  
+- Fine-grained access control  
+- Full auditing capability  
+
+---
+
+## ✅ Step 1 – Install Windows LAPS
+
+### Domain Controller (Windows Server 2022)
+```powershell
+Import-Module LAPS
+```
+
+### Windows 11 Client (TARGET-PC)
+```powershell
+Add-WindowsCapability -Online -Name Windows.LAPS~~~~0.0.1.0
+```
+
+Verify:
+```powershell
+Get-WindowsCapability -Online | Where-Object {$_.Name -like "*LAPS*"}
+```
+
+---
+
+## ✅ Step 2 – Configure LAPS GPO
+
+**Group Policy Management → Default Domain Policy → Computer Configuration → Administrative Templates → System → LAPS**
+
+Enable:
+
+- Configure password backup directory → **Active Directory**
+- Password settings → **Enabled**
+- Do not allow password expiration longer than required → **Enabled**
+- Enable password encryption → **Enabled**
+
+---
+
+## ✅ Step 3 – Delegate AD Permissions
+
+Domain-level permission:
+```powershell
+Set-LapsADComputerSelfPermission -Identity "DC=ADPROJECT,DC=local"
+```
+
+OU-based permissions:
+```powershell
+Set-LapsADComputerSelfPermission -Identity "OU=IT,DC=ADPROJECT,DC=local"
+Set-LapsADComputerSelfPermission -Identity "OU=HR,DC=ADPROJECT,DC=local"
+```
+
+---
+
+## ✅ Step 4 – Apply LAPS Policy on Client
+
+```powershell
+gpupdate /force
+Invoke-LapsPolicyProcessing -Verbose
+```
+
+Successful output indicates AD write permissions and policy application.
+
+---
+
+## ✅ Step 5 – Verify Password Storage in AD
+
+Retrieve LAPS password (authorized admins only):
+
+```powershell
+Get-LapsADPassword -Identity "TARGET-PC" -AsPlainText
+```
+
+Expected:
+
+```
+ComputerName  Password     ExpirationTimestamp
+-----------   --------     -------------------
+TARGET-PC     Xy3$...      2026-01-05 12:28:10
+```
+
+---
+
+## 🔍 LAPS Event Logging
+
+Location:
+
+```
+Event Viewer → Applications and Services Logs  
+→ Microsoft → Windows → LAPS → Operational
+```
+
+Key events:
+
+- **10018** – Password successfully backed up  
+- **10019** – Password rotation  
+- **10033** – Policy validation  
+- **10055** – Encryption issues  
+
+---
+
+# 🛡️ Security Impact
+
+LAPS significantly increases identity security by:
+
+- Preventing lateral movement using shared passwords  
+- Blocking credential replay & pass-the-hash  
+- Enforcing Zero Trust principles  
+- Providing secure, auditable password retrieval  
+
+---
+
+# 🎯 MITRE ATT&CK Mapping
+
+| Technique | Description | LAPS Benefit |
+|----------|-------------|--------------|
+| **T1078 – Valid Accounts** | Stolen local admin credentials | Unique passwords prevent reuse |
+| **T1021 – Remote Services** | Pivoting via SMB/WMI/RDP | Each machine has different credentials |
+| **T1555 – Credential Access** | Password/hash extraction | Dumped passwords become useless |
+| **T1556 – Credential Abuse** | Reusing compromised creds | LAPS rotates automatically |
+
+---
+
+# 🧩 Final Summary
+
+LAPS is now fully deployed:
+
+- ✔ Installed on clients and DC  
+- ✔ AD schema extended  
+- ✔ GPO configured  
+- ✔ Permissions granted  
+- ✔ Password rotation working  
+- ✔ Verified via ADUC, PowerShell, and Event Viewer  
+
+LAPS is now a core hardening control in the Identity Security project.
