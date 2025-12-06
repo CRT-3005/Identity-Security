@@ -54,6 +54,10 @@ Enable:
 **Figure 1 – LAPS Group Policy Configuration:** 
 Password backup, rotation settings, and encryption configured in the Default Domain Policy.
 
+The lab uses a password age of 30 days, meaning each client will automatically rotate its local administrator password every 30 days unless manually forced earlier.
+
+No manual schema extension was required because Windows Server 2022 includes the modern LAPS schema by default.
+
 ---
 
 ## ✅ Step 3 – Delegate AD Permissions
@@ -108,34 +112,62 @@ The rotated password and its expiration timestamp are securely stored in AD.
 
 ---
 
-## 🔍 LAPS Event Logging
+# 🔍 LAPS Event Logging (Operational Events)
 
-Location:
+Event Viewer path:
 
 ```
 Event Viewer → Applications and Services Logs  
 → Microsoft → Windows → LAPS → Operational
 ```
 
-Key events:
+### Event IDs Observed in This Lab:
 
-- **10018** – Password successfully backed up   
-- **10055** – Encryption issues
+| Event ID | Meaning |
+|----------|---------|
+| **10018** | Password successfully backed up to Active Directory |
+| **10055** | Encrypted password attributes processed |
+
+### Additional Possible Events (Not observed in this lab)
+
+| Event ID | Meaning |
+|----------|---------|
+| **10019** | Password rotation event (only appears when password expiration occurs or rotation is manually forced) |
+| **10033** | LAPS policy validation |
+
+**Note:**  
+The absence of EventIDs **10019** and **10033** is normal unless password expiration has passed or policy inconsistencies exist.
 
 <img width="676" height="751" alt="image" src="https://github.com/user-attachments/assets/680f2787-5f1c-48d6-a6c0-4348206ec071" />
 
 **Figure 5 - LAPS Operational Log (Events 10018 & 10055):**
 LAPS successfully logs EventID 10018 (password backup) and 10055 (encrypted password storage). Other event IDs such as 10019 (password rotation) will only appear once the configured password expiration timestamp has passed or when a manual rotation is forced.
 
-Alternate events:
-- **10019** – Password rotation  
-- **10033** – Policy validation 
+---
 
-**Event 10019** - This event logs only under certain OS builds or when LAPS detects a policy inconsistency.
-A healthy system with valid configuration may never generate EventID 10033.
+# 🔧 Least Privilege Hardening (Recommended)
 
-**Event 10055 - This event logs only under certain OS builds or when LAPS detects a policy inconsistency.
-A healthy system with valid configuration may never generate EventID 10033.
+By default, Domain Admins can read LAPS passwords.  
+Best practice is to create a restricted group to limit who can retrieve them:
+
+```powershell
+Set-LapsADPasswordReadPermission `
+ -Identity "OU=Workstations,DC=ADPROJECT,DC=local" `
+ -AllowedPrincipals "LAPS-ReadAdmins"
+```
+
+This enforces **least privilege** and prevents unnecessary access to privileged credentials.
+
+---
+
+# 🧰 Troubleshooting Summary
+
+| Issue | Cause | Solution |
+|-------|--------|----------|
+| RPC error 0x80070032 | Missing AD permissions | Run `Set-LapsADComputerSelfPermission` |
+| No password written to AD | GPO not applied | Run `gpupdate /force` and verify GPO |
+| LAPS cmdlets missing | Module not imported | `Import-Module LAPS` |
+| No rotation events | Password not expired | Wait until expiration or force rotation |
 
 ---
 
@@ -163,13 +195,13 @@ LAPS significantly increases identity security by:
 
 # 🧩 Final Summary
 
-LAPS is now fully deployed:
+LAPS is now fully deployed and functioning:
 
-- ✔ Installed on clients and DC  
-- ✔ AD schema extended  
-- ✔ GPO configured  
-- ✔ Permissions granted  
-- ✔ Password rotation working  
-- ✔ Verified via ADUC, PowerShell, and Event Viewer  
+- ✔ Installed on domain controller and clients  
+- ✔ GPO configured and applied  
+- ✔ AD permissions granted  
+- ✔ Local admin passwords securely backed up  
+- ✔ Password expiration and rotation working  
+- ✔ Events verified in Event Viewer  
 
-LAPS is now a core hardening control in the Identity Security project.
+LAPS now serves as a core hardening control in the Identity Security project.
