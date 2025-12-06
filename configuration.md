@@ -5,7 +5,7 @@ It covers the preparation of Splunk, Windows hosts, Sysmon, and log forwarding p
 
 <img width="536" height="579" alt="image" src="https://github.com/user-attachments/assets/751644ca-f84d-4133-a614-b9129915c264" />
 
-**Figure 1 – Changing inputs.conf file :** 
+**Figure 1 – Changing inputs.conf file:** 
 Created new `inputs.conf` files for both the **Domain Controller** and **Windows 10 client** 
 The configuration ensures Windows Event Logs (Security, System, Application) and Sysmon data are forwarded to the Splunk indexer.  
 Each host uses the proper indexes (`identity`, `sysmon`, `endpoint`) for clean separation of telemetry.
