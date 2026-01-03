@@ -292,3 +292,46 @@ This table compares the two identity-based attacks executed in the lab and summa
 
 - **This lab demonstrates full identity-attack visibility.**
   Both Kerberos and NTLM pathways were monitored, ingested, extracted, and correlated inside Splunk.
+
+---
+
+## ⏱ Alert Scheduling & Detection Latency
+
+The NTLM password spray detection was implemented as a **scheduled Splunk correlation alert** rather than a real-time alert.
+
+### Correlation Alert Configuration
+- **Schedule:** Every 5 minutes (`*/5 * * * *`)
+- **Time Range:** Last 5 minutes
+- **Trigger Condition:** Number of results > 0
+- **Trigger Mode:** Once per execution
+
+<img width="752" height="656" alt="Splunk NTLM Password Spray Alert" src="https://github.com/user-attachments/assets/73d0932c-1973-4875-8acc-31c14d7df731" />
+
+**Figure 5 – NTLM Password Spray Alert Configuration**  
+Scheduled correlation alert configured to detect NTLM password spraying by correlating multiple authentication failures within a five-minute window.
+
+Because Splunk evaluates scheduled alerts only at their defined interval, the NTLM password spray activity was detected on the **next scheduled execution** rather than immediately after the attack occurred.
+
+This behaviour reflects real-world SOC operations, where authentication-based detections are evaluated over defined time windows to enable correlation, reduce noise, and improve alert fidelity.
+
+### Operational Impact
+- Short-lived password spray activity may complete within seconds
+- Detection occurs when the correlation window is evaluated
+- This delay is expected and acceptable in SOC environments
+- Proper time-window alignment ensures reliable detection without duplicate alerts
+
+---
+
+<img width="1381" height="357" alt="Splunk NTLM Alert Trigger" src="https://github.com/user-attachments/assets/972c1708-045d-4215-8510-ee7ecaeece74" />
+
+**Figure 6 – NTLM Password Spray Correlation Alert Triggered**  
+The scheduled Splunk alert fired after evaluating authentication failures originating from a single source IP.
+
+Upon triggering, the alert returned correlated results identifying the source IP and number of targeted accounts responsible for the password spray.
+
+<img width="1897" height="433" alt="Splunk SPL NTLM Alert" src="https://github.com/user-attachments/assets/819e8066-04f8-42ca-8ade-b6c4e4925061" />
+
+**Figure 7 – NTLM Password Spray Correlation Alert Results**  
+The scheduled Splunk correlation alert successfully returned results confirming NTLM authentication failures across multiple domain accounts from a single source IP within the defined detection window.
+
+
