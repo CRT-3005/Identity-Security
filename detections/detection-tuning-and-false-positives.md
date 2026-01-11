@@ -88,9 +88,21 @@ The tuned detection continues to identify password spraying behaviour while sign
 
 ---
 
-## 🏁 Outcome
+## MITRE ATT&CK Mapping
 
-- Authentication baseline established before tuning  
-- Untuned detection replayed to observe alert noise  
-- Evidence based tuning applied  
-- Detection fidelity preserved  
+| Technique ID | Name | Description |
+|-------------|------|-------------|
+| T1110.003 | Password Spraying | Testing one password across multiple accounts to avoid account lockout. |
+| TA0006 | Credential Access | Core tactical goal to obtain or guess valid credentials. |
+
+---
+
+## Summary
+
+This detection demonstrates end-to-end identification of password spraying activity in an Active Directory environment.
+
+1. An attacker performs a password spray against multiple domain user accounts  
+2. The Domain Controller records failed authentication attempts (EventID 4625)  
+3. Splunk ingests and parses Windows Security logs  
+4. The detection correlates failed logons across multiple users and a single source IP  
+5. An analyst identifies authentication behaviour consistent with password spraying
