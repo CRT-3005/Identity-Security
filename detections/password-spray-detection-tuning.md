@@ -88,6 +88,20 @@ The tuned detection continues to identify password spraying behaviour while sign
 
 ---
 
+## ⚠️ False Positive Considerations
+
+The following scenarios may generate alerts that resemble password spraying behaviour and should be evaluated during investigation:
+
+- Administrative or IT testing activity where multiple user accounts are intentionally authenticated from a single system  
+- Automated scripts or lab tooling performing repeated authentication attempts across multiple accounts  
+- Misconfigured services or applications using invalid or expired credentials against several accounts  
+- Identity management or monitoring tools validating credentials during synchronisation or health checks  
+- Internal systems performing bulk authentication checks, particularly in lab or testing environments  
+
+Analysts should validate the source IP, account types targeted, timing, and operational context before escalating alerts as confirmed password spraying activity.
+
+---
+
 ## MITRE ATT&CK Mapping
 
 | Technique ID | Name | Description |
