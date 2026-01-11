@@ -1,18 +1,44 @@
-## Detection Tuning - Step 1
+# 🧪 Detection Tuning – Password Spray
 
-<img width="1862" height="814" alt="image" src="https://github.com/user-attachments/assets/3948f89e-fdeb-43fb-8452-95f7bd52cd13" />
+This detection is based on Windows Security authentication events collected from a lab-based Active Directory environment and focuses on identifying password spraying activity through failed network logons.
 
-**Baseline Authentication Activity – EventID 4624 / 4625**
-Raw authentication baseline using Windows Security logs before any tuning or exclusions were applied.
+---
 
+## 🎯 Objective
 
-<img width="1879" height="460" alt="image" src="https://github.com/user-attachments/assets/fbc1c4e0-a1ba-4366-8242-37f9b64c3c9c" />
+The objective of this detection is to identify password spraying activity by detecting multiple failed authentication attempts from a single source IP address against multiple user accounts within a short time window, while minimising false positives through controlled, evidence based tuning.
 
-**Successful Logon Types Baseline – EventID 4624**
-Distribution of successful authentication logon types prior to any detection tuning.
+This detection focuses on Windows Security authentication events and demonstrates a structured SOC tuning workflow.
 
+---
 
-## Detection Tuning – Step 2
+## 🔍 Step 1 – Authentication Baseline
+
+Before tuning any detection logic, a baseline of normal authentication behaviour was established using Windows Security events.
+
+### 📊 Baseline Authentication Activity (EventID 4624 / 4625)
+
+<img width="1862" height="814" alt="Baseline" src="https://github.com/user-attachments/assets/893a2f5b-3d6d-4604-a482-6c906b5cc0ac" />
+
+**Figure 1 – Baseline Authentication Activity (EventID 4624 / 4625)**  
+Raw authentication baseline showing successful (4624) and failed (4625) logons across users and logon types prior to any tuning or exclusions.
+
+---
+
+### 📈 Successful Logon Types (EventID 4624)
+
+<img width="1879" height="460" alt="Successful logons" src="https://github.com/user-attachments/assets/8ebb26b9-843b-4db7-bb85-0b794e06d459" />
+
+**Figure 2 – Successful Logon Types Baseline (EventID 4624)**  
+Distribution of successful authentication logon types. Network based logons (LogonType 3) dominate, which is expected in a domain environment.
+
+---
+
+## 🧠 Step 2 – Untuned Detection Replay
+
+An initial password spray detection was replayed against the baseline data without tuning to observe alert behaviour and identify false positives.
+
+### 🚨 Untuned Password Spray Detection
 
 ```spl
 index=identity sourcetype="WinEventLog:SecurityAll" "<EventID>4625</EventID>"
@@ -24,8 +50,47 @@ index=identity sourcetype="WinEventLog:SecurityAll" "<EventID>4625</EventID>"
 | sort -attempts
 ```
 
-<img width="1873" height="764" alt="image" src="https://github.com/user-attachments/assets/674bbcff-6d90-448c-aab7-11a5d489bf7c" />
+<img width="1873" height="764" alt="Untuned password spray detection" src="https://github.com/user-attachments/assets/42f980a7-4f2d-421b-8e01-7a3362fe764f" />
 
-**Untuned Password Spray Detection – Initial Results**
-An untuned password spray detection was replayed against baseline authentication data. The detection surfaced repeated failed authentication attempts from a single internal IP address against multiple distinct user accounts within short time windows, consistent with password spraying behaviour.
+**Figure 3 – Untuned Password Spray Detection (Initial Results)**  
+The untuned detection surfaced repeated failed authentication attempts from a single internal IP address against multiple user accounts within short time windows, consistent with password spraying behaviour.
 
+---
+
+## 🛠️ Step 3 – Detection Tuning
+
+Controlled tuning was applied based on baseline observations to reduce false positives while preserving detection coverage.
+
+### ✅ Tuning Decisions
+
+- Excluded localhost authentication attempts (127.0.0.1)
+- Excluded machine accounts (accounts ending in $)
+- Increased the minimum number of distinct users required to trigger
+
+### 🎯 Tuned Password Spray Detection
+
+```spl
+index=identity sourcetype="WinEventLog:SecurityAll" "<EventID>4625</EventID>"
+| rex field=_raw "TargetUserName.*?>(?<TargetUserName>[^<]+)<"
+| rex field=_raw "Data Name='IpAddress'>(?<IpAddress>[^<]+)<"
+| search NOT IpAddress="127.0.0.1"
+| search NOT TargetUserName="*$"
+| bin _time span=5m
+| stats dc(TargetUserName) as unique_users values(TargetUserName) as users count as attempts by _time IpAddress
+| where unique_users >= 5
+| sort -attempts
+```
+
+<img width="1867" height="766" alt="Tuned password spray" src="https://github.com/user-attachments/assets/4df02c7c-4e14-4806-9090-d1b4190ea22f" />
+
+**Figure 4 – Tuned Password Spray Detection (Reduced False Positives)**  
+The tuned detection continues to identify password spraying behaviour while significantly reducing benign and lab generated noise.
+
+---
+
+## 🏁 Outcome
+
+- Authentication baseline established before tuning  
+- Untuned detection replayed to observe alert noise  
+- Evidence based tuning applied  
+- Detection fidelity preserved  
