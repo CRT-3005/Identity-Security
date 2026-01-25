@@ -5,7 +5,7 @@ The objective of this lab is to demonstrate **identity-based threat detection, i
 
 This project focuses on detecting suspicious authentication activity and identity abuse within an **Active Directory domain**, and documenting how a SOC would **detect, triage, and respond** to those threats.
 
-It expands upon the  [Active Directory Project](https://github.com/CRT-3005/AD-Project) by ingesting, analysing, and operationalising Windows authentication telemetry for identity security use cases.
+It expands upon the [Active Directory Project](https://github.com/CRT-3005/AD-Project) by ingesting, analysing, and operationalising Windows authentication telemetry for identity security use cases.
 
 ---
 
@@ -41,7 +41,7 @@ The lab environment replicates a small enterprise network designed to simulate i
 | **ADDC01** | Domain Controller | Windows Server 2022 | AD DS, DNS, authentication logging |
 | **TARGET-PC** | Workstation | Windows 11 Pro | Domain-joined identity testing |
 | **Splunk Server** | SIEM | Ubuntu Server 22.04 | Centralized log ingestion, correlation, and identity threat detection |
-| **Kali** | Attacker | Kali Linux | Kerberos, NTLM, SMB attack simulation |
+| **Kali** | Attacker | Kali Linux | Kerberos, NTLM, SMB, and authentication abuse simulation |
 
 ### Network Configuration
 All systems operate on the same internal network (192.168.10.0/24).  
@@ -51,10 +51,11 @@ All systems operate on the same internal network (192.168.10.0/24).
 
 ## Skills Learned
 - Windows authentication telemetry analysis (Kerberos & NTLM)
-- Splunk SPL development and field extraction
+- Splunk SPL development and XML field extraction
 - Detection engineering using correlation logic
-- SOC alert scheduling and detection latency awareness
-- Identity attack investigation workflows
+- Detection tuning and false positive reduction
+- SOC alert scheduling and investigation workflows
+- Identity attack investigation techniques
 - MITRE ATT&CK mapping for identity threats
 - Windows identity hardening (LAPS)
 
@@ -66,13 +67,13 @@ All systems operate on the same internal network (192.168.10.0/24).
 - **Splunk Add-on for Windows**
 - **Active Directory (Windows Server 2022)**
 - **Windows 11 Pro**
-- **Kali Linux** (Kerbrute, CrackMapExec)
+- **Kali Linux** (Kerbrute, CrackMapExec, Kerberos tooling)
 - **VirtualBox**
 
 ---
 
 ## Workflow Overview
-1. **Log Generation** – Windows authentication events (4624, 4625, 4768, 4771)
+1. **Log Generation** – Windows authentication events (4624, 4625, 4768, 4769, 4771)
 2. **Log Forwarding** – Splunk UF forwards Security logs to SIEM
 3. **Indexing & Parsing** – XML Security logs ingested with full fidelity
 4. **Detection Engineering** – SPL written to detect identity abuse
@@ -114,6 +115,36 @@ All systems operate on the same internal network (192.168.10.0/24).
 
 ---
 
+### 🔐 Failed → Successful Authentication Correlation
+- Event IDs: **4625 → 4624**
+- Correlates authentication failures followed by success within short time windows
+- Identifies potential credential compromise and reuse
+
+📄 Documentation:  
+👉 `detections/failed-to-successful-authentication-correlation.md`
+
+---
+
+### 🔐 Privileged Account Authentication Monitoring
+- Event IDs: **4624 / 4625**
+- Focuses on high-risk authentication involving privileged accounts
+- Tuned to remove expected local administrative noise
+
+📄 Documentation:  
+👉 `detections/privileged-account-authentication-monitoring.md`
+
+---
+
+### 🌍 Impossible Travel Authentication (Kerberos)
+- Event IDs: **4768 / 4769**
+- Detects successful Kerberos authentication from multiple source IPs within a short time window
+- Uses normalization and correlation to identify credential misuse without failures
+
+📄 Documentation:  
+👉 `detections/impossible-travel-kerberos-authentication.md`
+
+---
+
 ## SOC Playbooks
 
 SOC playbooks document **what an analyst does after an alert fires**, including investigation, validation, and response steps.
@@ -151,14 +182,15 @@ To reduce lateral movement and credential reuse risk, **Windows LAPS** was deplo
 ## Key Takeaways
 - Identity attacks generate high-fidelity telemetry when auditing is configured correctly
 - Kerberos and NTLM require different detection strategies
-- Correlation over time is essential for password spray detection
-- SOC alerts operate on defined schedules, not instant execution
+- Correlation over time is essential for detecting credential abuse
+- Valid credential misuse often produces no authentication failures
+- Detection tuning is critical to reduce false positives
 - Hardening controls significantly reduce post-compromise impact
 
 ---
 
 ## Project Status
 This project is actively expanding to include:
-- Privilege escalation detection
-- Group membership abuse
-- Detection tuning and false positive reduction
+- Group membership abuse detection
+- Advanced Kerberos abuse detections
+- Additional detection tuning and SOC playbooks
