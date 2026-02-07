@@ -4,7 +4,7 @@
 
 The Kerberos Security Posture dashboard provides continuous visibility into Kerberos authentication activity, ticket encryption strength, and Kerberoasting exposure within the Active Directory domain.
 
-This dashboard is designed to validate Kerberos hardening controls, detect configuration regressions, and support SOC analysts in identifying high-risk Kerberos behavior before credential compromise occurs.
+This dashboard provides continuous assurance that Kerberos authentication remains securely configured and resistant to Kerberoasting attacks, while supporting early detection of encryption regressions and service account exposure.
 
 ---
 
@@ -93,6 +93,7 @@ index=identity sourcetype="WinEventLog:SecurityAll" "<EventID>4769</EventID>"
 <img width="965" height="157" alt="Non-AES Kerberos Service Tickets" src="https://github.com/user-attachments/assets/26175a6e-d15b-4b9b-b1f5-58e8fdeb015d" />
 
 **Figure 4 – Non-AES Kerberos Service Tickets**  
+Any non-zero result in this panel represents a high-severity security condition requiring immediate investigation.
 
 ---
 
@@ -112,6 +113,31 @@ index=identity sourcetype="WinEventLog:SecurityAll" "<EventID>4769</EventID>"
 <img width="967" height="294" alt="Top Services Requesting Tickets" src="https://github.com/user-attachments/assets/8beab1ed-f166-4719-b36a-aacf3c3b9c44" />
 
 **Figure 5 – Top Kerberos Service Ticket Requesters**  
+
+---
+
+## Analyst Usage
+
+SOC analysts should use this dashboard as a **continuous Kerberos health and risk monitoring view**.
+
+Recommended usage:
+
+- **Daily review:**  
+  Confirm Kerberos ticket volume and encryption posture remain consistent with the established baseline.
+
+- **Encryption validation:**  
+  Verify that Panel 2 shows only AES-based encryption types (`0x12`) and that no legacy encryption appears.
+
+- **Exposure assessment:**  
+  Review Panel 3 to identify any user-based service accounts requesting Kerberos tickets that may warrant further review.
+
+- **Incident response trigger:**  
+  Treat any non-zero result in **Panel 4 – Non-AES Kerberos Service Tickets** as a high-severity security condition requiring immediate investigation.
+
+- **Triage support:**  
+  Use Panel 5 to identify which services are most frequently requesting Kerberos tickets during investigations or post-alert analysis.
+
+This dashboard supports both **proactive posture monitoring** and **reactive incident triage** for Kerberos-related threats.
 
 ---
 
