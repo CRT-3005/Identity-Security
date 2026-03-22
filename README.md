@@ -60,7 +60,7 @@ All systems operate on the same internal network (192.168.10.0/24).
 - SOC alert scheduling and investigation workflows
 - Identity attack investigation techniques
 - MITRE ATT&CK mapping for identity threats
-- Windows identity hardening (LAPS)
+- Windows identity hardening (LAPS and Kerberos controls)
 
 ---
 
@@ -77,6 +77,10 @@ All systems operate on the same internal network (192.168.10.0/24).
 ---
 
 ## Workflow Overview
+
+This project follows a structured SOC workflow that mirrors how identity threats are handled in enterprise environments, from telemetry generation through detection, investigation, and prevention.
+
+Each stage of the workflow is designed to reflect real-world operational practices, ensuring that authentication events are not only detected, but contextualized, validated, and used to inform both response actions and long-term security posture improvements.
 
 1. **Telemetry Generation**  
    Windows authentication activity is generated across the domain, including successful and failed logons, Kerberos ticket requests, and authentication failures (Event IDs 4624, 4625, 4768, 4769, 4771).
@@ -238,6 +242,17 @@ Custom Splunk dashboards were created to provide SOC-level visibility into authe
 
 📄 Documentation:  
 👉 `dashboards/kerberos-security-posture.md`
+
+---
+
+### 📊 Authentication Pressure Dashboard
+- Visibility into failed authentication pressure across the environment
+- Account and source IP targeting analysis
+- Password spray pattern identification
+- Failed → successful authentication correlation
+
+📄 Documentation:  
+👉 `dashboards/authentication-pressure-dashboard.md`
 
 ---
 
