@@ -17,7 +17,10 @@ The goal of this project is to reflect realistic SOC workflows by combining dete
 4. [Workflow Overview](#workflow-overview)  
 5. [Detection Coverage](#detection-coverage)  
 6. [SOC Playbooks](#soc-playbooks)  
-7. [Hardening & Prevention](#hardening--prevention)
+7. [Hardening & Prevention](#hardening--prevention)  
+8. [Dashboards](#dashboards)  
+9. [Key Takeaways](#key-takeaways)  
+10. [Project Status](#project-status)
 
 ---
 
@@ -188,10 +191,10 @@ Each playbook outlines how alerts are validated, contextualized, and escalated u
 
 📘 Playbooks:
 - **NTLM Password Spray Response**  
-  👉 `playbooks/NTLM_Password_Spray_Playbook.md`
+  👉 `playbooks/ntlm-password-spray-playbook.md`
 
 - **Kerberos Authentication Guessing**  
-  👉 `playbooks/Kerberos_Authentication_Guessing_Playbook.md`
+  👉 `playbooks/kerberos-password-spray-playbook.md`
 
 Each playbook includes:
 - Alert context
@@ -212,7 +215,7 @@ To reduce lateral movement and credential reuse risk, **Windows LAPS** was deplo
 - Verified via PowerShell, ADUC, and Event Viewer
 
 📄 Documentation:  
-👉 `hardening/LAPS_Hardening.md`
+👉 `hardening/laps-hardening.md`
 
 ---
 
@@ -232,7 +235,8 @@ Key controls implemented and validated:
 
 ## Dashboards
 
-Custom Splunk dashboards were created to provide SOC-level visibility into authentication security and identity posture.
+Custom Splunk dashboards provide SOC-level visibility into authentication activity, Kerberos security posture, and signs of identity abuse across the environment.
+
 
 ### 📊 Kerberos Security Posture Dashboard
 - Continuous visibility into Kerberos service ticket activity
