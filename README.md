@@ -25,10 +25,10 @@ The lab focuses on Kerberos and NTLM abuse, privileged account activity, service
 4. [Workflow Overview](#workflow-overview)  
 5. [Detection Coverage](#detection-coverage)  
 6. [SOC Playbooks](#soc-playbooks)  
-7. [Hardening & Prevention](#hardening--prevention)  
+7. [Hardening & Prevention](#hardening)  
 8. [Dashboards](#dashboards)  
 9. [Key Takeaways](#key-takeaways)  
-10. [Project Status](#project-status)
+10. [Project Status](#next-improvements)
 
 ---
 
@@ -228,7 +228,7 @@ Each playbook includes:
 
 ---
 
-## Hardening & Prevention
+## Hardening
 
 This section covers the defensive controls implemented in the lab to reduce identity attack exposure and improve resilience against common authentication-based threats.
 
