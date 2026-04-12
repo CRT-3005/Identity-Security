@@ -119,6 +119,4 @@ This ensured the Windows 11 endpoint still produced full identity telemetry.
 
 With the environment fully configured and validated across both hosts (ADDC01 and the Windows 11 client), the next phase focuses on simulating real-world identity attacks and analysing Kerberos, Sysmon, and Windows Security telemetry in Splunk.
 
-👉 **[Detection Coverage](https://github.com/CRT-3005/Identity-Security/tree/main/detections)**
-
----
+👉 **[Detection Coverage](https://github.com/CRT-3005/Identity-Security/blob/main/detections/README.md)**
