@@ -2,11 +2,19 @@
 
 ## Objective
 
-This project demonstrates end-to-end identity security monitoring within an Active Directory environment, focusing on how a Security Operations Center (SOC) detects, validates, and mitigates authentication-based threats.
+This project demonstrates identity security monitoring in an Active Directory lab from a SOC perspective. Using Splunk, it covers authentication telemetry collection, detection engineering, alert correlation, analyst investigation, and identity hardening validation.
 
-Using Splunk as the SIEM platform, the lab simulates real-world identity attack techniques, engineers high-signal detections, applies preventative hardening controls, and validates security posture through dashboards and telemetry. Emphasis is placed on Kerberos and NTLM authentication abuse, service account risk, and continuous monitoring to detect configuration regressions.
+The lab focuses on Kerberos and NTLM abuse, privileged account activity, service account risk, and dashboard-driven monitoring to show how identity threats can be detected, investigated, and reduced through defensive controls.
 
-The goal of this project is to reflect realistic SOC workflows by combining detection engineering, identity hardening, and operational visibility rather than isolated attack simulations.
+---
+
+## At a Glance
+
+- Active Directory identity security lab built in VirtualBox
+- Splunk-based detection engineering for Kerberos, NTLM, and SMB authentication abuse
+- SOC playbooks for alert investigation and response
+- Hardening validation for Windows LAPS and Kerberos controls
+- Dashboards for authentication pressure and Kerberos security posture
 
 ---
 
@@ -26,31 +34,32 @@ The goal of this project is to reflect realistic SOC workflows by combining dete
 
 ## Lab Environment
 
-The lab environment replicates a small enterprise network designed to simulate identity attacks and corresponding SOC detections.
+The lab simulates a small enterprise Active Directory environment used to generate, detect, and investigate identity-based attacks.
 
-<img width="668" height="655" alt="Identity-Security-Project drawio" src="https://github.com/user-attachments/assets/86a1ef93-742f-4e0c-942f-63d2f7bbbc55" />
-
-**Domain:** ADProject.local  
-**Network:** 192.168.10.0/24  
-
-**Splunk Server:** 192.168.10.10  
-**Domain Controller:** 192.168.10.7  
-**Windows 11 Client:** 192.168.10.100  
-**Attacker (Kali Linux):** 192.168.10.250  
+**Domain:** `ADProject.local`  
+**Network:** `192.168.10.0/24`
 
 ### Host Overview
 
 | Hostname | Role | Operating System | Purpose |
-|----------|------|------------------|---------|
-| **ADDC01** | Domain Controller | Windows Server 2022 | AD DS, DNS, authentication logging |
-| **TARGET-PC** | Workstation | Windows 11 Pro | Domain-joined identity testing |
-| **Splunk Server** | SIEM | Ubuntu Server 22.04 | Centralized log ingestion, correlation, and identity threat detection |
-| **Kali** | Attacker | Kali Linux | Kerberos, NTLM, SMB, and authentication abuse simulation |
+|---|---|---|---|
+| ADDC01 | Domain Controller | Windows Server 2022 | AD DS, DNS, authentication logging |
+| TARGET-PC | Workstation | Windows 11 Pro | Domain-joined identity testing |
+| SPLUNK01 | SIEM | Ubuntu Server 22.04 | Log ingestion, correlation, and detection |
+| KALI | Attacker | Kali Linux | Kerberos, NTLM, and SMB attack simulation |
+
+### IP Addressing
+
+| System | IP Address |
+|---|---|
+| Domain Controller | 192.168.10.7 |
+| Splunk Server | 192.168.10.10 |
+| Windows 11 Client | 192.168.10.100 |
+| Kali Linux | 192.168.10.250 |
 
 ### Network Configuration
 
-All systems operate on the same internal network (192.168.10.0/24).  
-**Splunk Universal Forwarders** on ADDC01 and TARGET-PC forward logs to Splunk over TCP **9997**.
+All systems operate on the same internal network. Splunk Universal Forwarders on ADDC01 and TARGET-PC forward Windows logs to Splunk over TCP 9997.
 
 ---
 
@@ -81,30 +90,28 @@ All systems operate on the same internal network (192.168.10.0/24).
 
 ## Workflow Overview
 
-This project follows a structured SOC workflow that mirrors how identity threats are handled in enterprise environments, from telemetry generation through detection, investigation, and prevention.
-
-Each stage of the workflow is designed to reflect real-world operational practices, ensuring that authentication events are not only detected, but contextualized, validated, and used to inform both response actions and long-term security posture improvements.
+The project follows a SOC workflow from telemetry generation to detection, investigation, and hardening validation.
 
 1. **Telemetry Generation**  
-   Windows authentication activity is generated across the domain, including successful and failed logons, Kerberos ticket requests, and authentication failures (Event IDs 4624, 4625, 4768, 4769, 4771).
+   Windows authentication events are generated across the domain, including Event IDs 4624, 4625, 4768, 4769, and 4771.
 
-2. **Log Collection & Forwarding**  
-   Splunk Universal Forwarders securely transmit Windows Security Event logs from domain hosts to the SIEM for centralized analysis.
+2. **Log Collection and Forwarding**  
+   Splunk Universal Forwarders send Windows Security logs to Splunk for central analysis.
 
-3. **Indexing & Parsing**  
-   XML-based Windows Security logs are ingested with full fidelity, enabling reliable field extraction and accurate correlation.
+3. **Indexing and Parsing**  
+   XML event data is ingested with full fidelity for field extraction and correlation.
 
 4. **Detection Engineering**  
-   SPL detections are engineered to identify identity abuse patterns, authentication anomalies, and Kerberos-related attack techniques.
+   SPL detections identify authentication abuse, Kerberos anomalies, and identity misuse.
 
-5. **Correlation & Alerting**  
-   Detections are scheduled and correlated over time to reflect realistic SOC alerting workflows and reduce false positives.
+5. **Correlation and Alerting**  
+   Detections are scheduled and correlated over time to reduce noise and improve signal quality.
 
-6. **Investigation & Response**  
-   SOC playbooks guide analyst investigation, validation, and response actions following alert generation.
+6. **Investigation and Response**  
+   SOC playbooks guide triage, validation, and response.
 
-7. **Hardening & Validation**  
-   Preventative identity security controls are implemented and validated using live authentication telemetry to reduce attack surface and detect configuration regressions.
+7. **Hardening and Validation**  
+   Identity controls are implemented and validated using live telemetry.
 
 ---
 
@@ -112,91 +119,107 @@ Each stage of the workflow is designed to reflect real-world operational practic
 
 This section documents the identity-based threats and authentication abuse scenarios detected within the lab environment.
 
-Each detection is designed to reflect realistic SOC use cases, focusing on high-signal identity telemetry, correlation over time, and clear analyst decision points. Where applicable, detections are paired with tuning, dashboards, and hardening controls to demonstrate full detection lifecycle ownership rather than isolated alert creation.
+The detections are designed around realistic SOC use cases, with a focus on high-signal identity telemetry, correlation over time, and clear analyst decision points. Where relevant, detections are supported by tuning, dashboards, and hardening controls to show full detection lifecycle ownership rather than isolated alert creation.
 
 ### 🔐 Kerberos Password Spray
-- Tool: **Kerbrute**
-- Event IDs: **4768 / 4771**
-- Detection via regex-assisted extraction from Security XML
+Detects Kerberos password spray activity generated with **Kerbrute**.
 
-📄 Documentation:  
-👉 `detections/kerberos-password-spray.md`
+- **Event IDs:** 4768, 4771
+- **Detection Method:** Regex-assisted extraction from Security XML
+- **Why it matters:** Identifies broad password guessing attempts against domain accounts over Kerberos
+
+**Documentation:** `detections/kerberos-password-spray.md`
 
 ---
 
 ### 🔐 NTLM Password Spray
-- Tool: **CrackMapExec**
-- Event ID: **4625**
-- Correlation based on distinct usernames per source IP
+Detects NTLM password spray activity generated with **CrackMapExec**.
 
-📄 Documentation:  
-👉 `detections/ntlm-password-spray.md`
+- **Event ID:** 4625
+- **Detection Method:** Correlation based on distinct usernames per source IP
+- **Why it matters:** Highlights repeated password guessing attempts against multiple accounts from a single source
+
+**Documentation:** `detections/ntlm-password-spray.md`
 
 ---
 
 ### 🔐 SMB Authentication Abuse (Valid Accounts)
-- Tool: **CrackMapExec**
-- Event ID: **4624 (Logon Type 3)**
-- Detection using baseline comparison and source IP analysis
+Detects successful SMB authentication from valid credentials used in suspicious patterns.
 
-📄 Documentation:  
-👉 `detections/smb-authentication-abuse.md`
+- **Event ID:** 4624 (Logon Type 3)
+- **Detection Method:** Baseline comparison and source IP analysis
+- **Why it matters:** Helps identify unauthorised lateral movement or suspicious network logon activity using legitimate accounts
+
+**Documentation:** `detections/smb-authentication-abuse.md`
 
 ---
 
 ### 🔐 Failed → Successful Authentication Correlation
-- Event IDs: **4625 → 4624**
-- Correlates authentication failures followed by success within short time windows
-- Identifies potential credential compromise and reuse
+Correlates repeated authentication failures followed by a successful logon within a short time window.
 
-📄 Documentation:  
-👉 `detections/failed-to-successful-authentication-correlation.md`
+- **Event IDs:** 4625, 4624
+- **Detection Method:** Short-window correlation of failed and successful authentication activity
+- **Why it matters:** Helps identify possible credential compromise, brute force success, or password reuse
+
+**Documentation:** `detections/failed-to-successful-authentication-correlation.md`
 
 ---
 
 ### 🔐 Privileged Account Authentication Monitoring
-- Event IDs: **4624 / 4625**
-- Focuses on high-risk authentication involving privileged accounts
-- Tuned to remove expected local administrative noise
+Monitors authentication activity involving privileged or high-value accounts.
 
-📄 Documentation:  
-👉 `detections/privileged-account-authentication-monitoring.md`
+- **Event IDs:** 4624, 4625
+- **Detection Method:** Focused monitoring of privileged account logons with tuning to remove expected administrative noise
+- **Why it matters:** Improves visibility of risky authentication activity involving elevated accounts
+
+**Documentation:** `detections/privileged-account-authentication-monitoring.md`
 
 ---
 
 ### 🌍 Impossible Travel Authentication (Kerberos)
-- Event IDs: **4768 / 4769**
-- Detects successful Kerberos authentication from multiple source IPs within a short time window
-- Uses normalization and correlation to identify credential misuse without failures
+Detects successful Kerberos authentication for the same account from multiple source IPs within a short time window.
 
-📄 Documentation:  
-👉 `detections/impossible-travel-kerberos-authentication.md`
+- **Event IDs:** 4768, 4769
+- **Detection Method:** Normalisation and correlation of successful Kerberos authentication activity
+- **Why it matters:** Helps identify suspicious account use that may indicate credential misuse without relying on failed logons
+
+**Documentation:** `detections/impossible-travel-kerberos-authentication.md`
 
 ---
-### 🔐 Kerberoasting – Weak Kerberos Encryption
-- Event ID: **4769**
-- Detection of Kerberos service tickets issued using non-AES encryption
-- Acts as a regression control in an AES-hardened domain
 
-📄 Documentation:  
-👉 `detections/kerberoasting-weak-encryption-detection.md`
+### 🔐 Kerberoasting – Weak Kerberos Encryption
+Detects Kerberos service tickets issued using non-AES encryption.
+
+- **Event ID:** 4769
+- **Detection Method:** Detection of service tickets issued with weak Kerberos encryption types
+- **Why it matters:** Acts as a regression control in an AES-hardened domain and helps identify weaker kerberoasting exposure
+
+**Documentation:** `detections/kerberoasting-weak-encryption-detection.md`
 
 ---
 
 ## SOC Playbooks
 
-SOC playbooks document the investigative and response actions taken after an alert fires, translating detections into repeatable analyst workflows.
+SOC playbooks document the investigative and response actions taken after an alert fires, turning detections into repeatable analyst workflows.
 
-Each playbook outlines how alerts are validated, contextualized, and escalated using authentication telemetry, enrichment queries, and identity context. The focus is on practical decision-making, false positive handling, and response guidance rather than theoretical incident response.
+Each playbook shows how alerts are validated, contextualised, and escalated using authentication telemetry, enrichment queries, and identity context. The focus is on practical analyst decision-making, false positive handling, and response guidance rather than theoretical incident response.
 
-📘 Playbooks:
-- **NTLM Password Spray Response**  
-  👉 `playbooks/ntlm-password-spray-playbook.md`
+### NTLM Password Spray Response
+Supports investigation and response for suspected NTLM password spray activity.
 
-- **Kerberos Authentication Guessing**  
-  👉 `playbooks/kerberos-password-spray-playbook.md`
+**Documentation:** `playbooks/ntlm-password-spray-playbook.md`
+
+---
+
+### Kerberos Password Spray Response
+Supports investigation and response for suspected Kerberos password spray activity.
+
+**Documentation:** `playbooks/kerberos-password-spray-playbook.md`
+
+---
 
 Each playbook includes:
+
 - Alert context
 - Investigation SPL
 - Analyst decision points
@@ -207,29 +230,27 @@ Each playbook includes:
 
 ## Hardening & Prevention
 
+This section covers the defensive controls implemented in the lab to reduce identity attack exposure and improve resilience against common authentication-based threats.
+
 ### 🛡 Windows LAPS Deployment
-To reduce lateral movement and credential reuse risk, **Windows LAPS** was deployed across the domain.
+Windows LAPS was deployed across the domain to reduce local administrator password reuse and limit lateral movement opportunities.
 
-- Unique local administrator passwords per host
-- Automatic rotation and AD-backed storage
-- Verified via PowerShell, ADUC, and Event Viewer
+- **Control Objective:** Unique local administrator passwords per host with automatic rotation
+- **Validation:** Confirmed through PowerShell, Active Directory Users and Computers, and Event Viewer
+- **Why it matters:** Reduces shared local admin risk and limits credential reuse across systems
 
-📄 Documentation:  
-👉 `hardening/laps-hardening.md`
+**Documentation:** `hardening/laps-hardening.md`
 
 ---
 
 ### 🔐 Kerberos Hardening
-Kerberos authentication was hardened to reduce credential theft and offline cracking risks.
+Kerberos authentication was hardened to reduce credential theft and offline cracking risk.
 
-Key controls implemented and validated:
-- AES-only Kerberos encryption enforced
-- Service account Kerberoasting risk assessed
-- Kerberos preauthentication verified across user accounts
-- Hardening validated using live Kerberos telemetry (Event IDs 4768 / 4769)
+- **Controls Implemented:** AES-only Kerberos encryption, Kerberoasting exposure review, and preauthentication validation across user accounts
+- **Validation:** Confirmed using live Kerberos telemetry from Event IDs 4768 and 4769
+- **Why it matters:** Strengthens Kerberos authentication security and helps reduce weak ticket exposure in the domain
 
-📄 Documentation:  
-👉 `hardening/kerberos-hardening.md`
+**Documentation:** `hardening/kerberos-hardening.md`
 
 ---
 
@@ -237,47 +258,48 @@ Key controls implemented and validated:
 
 Custom Splunk dashboards provide SOC-level visibility into authentication activity, Kerberos security posture, and signs of identity abuse across the environment.
 
-
 ### 📊 Kerberos Security Posture Dashboard
-- Continuous visibility into Kerberos service ticket activity
-- Encryption posture validation (AES-only enforcement)
-- Kerberoasting exposure monitoring
-- Early detection of configuration regressions
+Provides continuous visibility into Kerberos service ticket activity and domain Kerberos security controls.
 
-📄 Documentation:  
-👉 `dashboards/kerberos-security-posture.md`
+- **Coverage:** Kerberos service ticket activity and encryption type usage
+- **Use Case:** AES-only enforcement validation and kerberoasting exposure monitoring
+- **Why it matters:** Helps identify weak encryption use, service account exposure, and configuration regressions
+
+**Documentation:** `dashboards/kerberos-security-posture.md`
 
 ---
 
 ### 📊 Authentication Pressure Dashboard
-- Visibility into failed authentication pressure across the environment
-- Account and source IP targeting analysis
-- Password spray pattern identification
-- Failed → successful authentication correlation
+Provides analyst visibility into failed authentication activity and common account targeting patterns.
 
-📄 Documentation:  
-👉 `dashboards/authentication-pressure-dashboard.md`
+- **Coverage:** Failed authentication volume, source IP targeting, and account targeting trends
+- **Use Case:** Password spray identification and failed-to-successful authentication correlation
+- **Why it matters:** Helps analysts spot authentication abuse quickly and review potential compromise patterns
+
+**Documentation:** `dashboards/authentication-pressure-dashboard.md`
 
 ---
 
 ## Key Takeaways
 
-- Identity-based attacks generate high-fidelity telemetry when Windows authentication auditing is correctly configured and centrally ingested into a SIEM.
-- Kerberos security requires a combination of **detection, hardening, and continuous validation**, not just alerting on attack tools or signatures.
-- Enforcing AES-only Kerberos encryption and verifying preauthentication settings significantly reduces Kerberoasting and AS-REP roasting risk.
-- Service accounts represent a critical identity attack surface and must be monitored, hardened, and validated using live authentication telemetry.
-- Effective Kerberos detections can act as **regression controls**, alerting when security posture drifts or legacy configurations reappear.
-- SOC dashboards provide continuous visibility into authentication posture, enabling analysts to validate controls, identify risk early, and respond quickly to anomalies.
-- Correlating detections, hardening controls, and dashboards creates a complete identity security lifecycle that mirrors real-world SOC operations.
+- Identity-based attacks generate high-value telemetry when Windows authentication auditing is configured correctly and centrally ingested into a SIEM.
+- Kerberos security depends on **detection, hardening, and continuous validation**, not just alerting on known attack tools or signatures.
+- Enforcing AES-only Kerberos encryption and verifying preauthentication settings reduces exposure to Kerberoasting and AS-REP roasting.
+- Service accounts remain a key identity attack surface and should be monitored, hardened, and validated through live authentication telemetry.
+- Kerberos detections can also act as **regression controls**, helping identify security drift and the return of weaker legacy configurations.
+- SOC dashboards improve visibility into authentication posture and help analysts spot risk early and respond to suspicious activity faster.
+- Linking detections, hardening controls, and dashboards creates a full identity security lifecycle that reflects real SOC operations.
 
 ---
 
-## Project Status
+## Next Improvements
 
-This project is actively expanding to deepen identity security coverage and SOC operational maturity, with planned enhancements including:
+Planned next steps for the project include:
 
 - Group membership abuse detection and monitoring for privileged roles
-- Advanced Kerberos abuse detections and regression controls
+- Additional Kerberos abuse detections and regression controls
 - Expanded SOC dashboards for identity posture and authentication visibility
-- Additional detection tuning, false positive reduction, and SOC playbooks
+- Further detection tuning, false positive reduction, and SOC playbook development
+
+---
 
