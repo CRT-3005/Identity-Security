@@ -25,7 +25,7 @@ The lab focuses on Kerberos and NTLM abuse, privileged account activity, service
 4. [Workflow Overview](#workflow-overview)  
 5. [Detection Coverage](#detection-coverage)  
 6. [SOC Playbooks](#soc-playbooks)  
-7. [Hardening & Prevention](#hardening-prevention)  
+7. [Hardening & Prevention](#hardening)  
 8. [Dashboards](#dashboards)  
 9. [Key Takeaways](#key-takeaways)  
 10. [Next Improvements](#next-improvements)
