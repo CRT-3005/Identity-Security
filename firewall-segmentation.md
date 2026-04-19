@@ -252,6 +252,10 @@ This caused the interface to hold two addresses at once:
 - old static IP from the original lab
 - new DHCP lease from pfSense
 
+<img width="1040" height="591" alt="Kali new LAB_LAN DHCP" src="https://github.com/user-attachments/assets/16f862e8-5c47-4f6c-95cd-c0186854b964" />
+
+**Figure 8 – Kali temporarily holding both the old static address and new DHCP lease**
+
 The stale address had to be removed before the network configuration was clean. The issue was resolved by removing the old static address from the Kali network profile so that the interface used only the DHCP lease issued by pfSense.
 
 ### Why Kali was migrated first
