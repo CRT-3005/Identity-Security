@@ -2,7 +2,7 @@
 
 ## Objective
 
-The original lab operated on a flat VirtualBox network, which allowed direct communication between key systems including the Domain Controller, Splunk server, Windows client, and Kali attack box. While this was fine for the initial build, it did not reflect a segmented network design.
+The original lab operated on a flat VirtualBox network that allowed direct communication between the Domain Controller, Splunk server, Windows client, and Kali attack box. While this was fine for the initial build, it did not reflect a segmented network design.
 
 To improve the security architecture of the lab, I deployed a lightweight pfSense firewall VM and began migrating systems onto a new routed internal subnet. This introduced a security boundary between internal lab hosts and upstream connectivity, while creating a foundation for tighter traffic control and future firewall policy.
 
@@ -17,7 +17,7 @@ The initial lab design used a single flat network:
 - Splunk server
 - Kali Linux attack box
 
-This made the environment easy to build, but it also meant there was no dedicated control point for:
+This made the environment easy to build, but it meant there was no dedicated control point for:
 
 - north-south traffic
 - default gateway enforcement
@@ -102,7 +102,9 @@ The firewall now sits between the internal lab segment and upstream connectivity
 
 I downloaded the pfSense Community Edition AMD64 installer ISO and attached it to a new VirtualBox VM.
 
-**[Insert Figure 1 – pfSense VM configuration in VirtualBox]**
+<img width="578" height="652" alt="pfSense VM settings" src="https://github.com/user-attachments/assets/82e950b7-21a6-47d5-9f0e-e4a9dd1bd8e8" />
+
+**Figure 1 – pfSense VM configuration in VirtualBox**
 
 ---
 
@@ -135,7 +137,9 @@ During installation:
 - DHCP was enabled on the LAN interface
 - UFS was selected instead of ZFS to keep the VM lightweight
 
-**[Insert Figure 2 – pfSense interface assignment during installation]**
+<img width="565" height="247" alt="pfSense WAN assignment" src="https://github.com/user-attachments/assets/eaa9e0b9-1b4f-44ec-9540-936e52b69313" />
+
+**Figure 2 – pfSense WAN interface assignment during installation**
 
 ---
 
@@ -148,7 +152,9 @@ After installation, pfSense showed:
 
 This confirmed that both interfaces were active and correctly assigned.
 
-**[Insert Figure 3 – pfSense console showing WAN and LAN interface status]**
+<img width="677" height="405" alt="pfSense complete (interfaces)" src="https://github.com/user-attachments/assets/3e770a00-52f7-4afa-b584-1f73cef6eb45" />
+
+**Figure 3 – pfSense console showing WAN and LAN interface status**
 
 ---
 
@@ -172,7 +178,9 @@ The old static IP configuration on Kali was removed, allowing the system to corr
 - IP address: `192.168.50.100`
 - default gateway: `192.168.50.1`
 
-**[Insert Figure 4 – Kali receiving the new 192.168.50.0/24 address]**
+<img width="1036" height="347" alt="Kali LAB_LAN complete" src="https://github.com/user-attachments/assets/0c3f9e5b-689d-4fd7-b69b-c84be28ae2cb" />
+
+**Figure 4 – Kali receiving the new 192.168.50.0/24 address**
 
 ---
 
@@ -185,7 +193,9 @@ The pfSense web GUI confirmed:
 - WAN interface up on `10.0.2.15`
 - LAN interface up on `192.168.50.1`
 
-**[Insert Figure 5 – pfSense interface status in the web GUI]**
+<img width="450" height="683" alt="pfSense GUI interface status" src="https://github.com/user-attachments/assets/2123ef3e-0bd2-42dc-8e65-4793ce00494b" />
+
+**Figure 5 – pfSense interface status in the web GUI**
 
 ### DHCP Lease Validation
 
@@ -194,7 +204,11 @@ The DHCP lease table showed Kali had received:
 - Hostname: `kali`
 - IP address: `192.168.50.100`
 
-**[Insert Figure 6 – DHCP lease issued to Kali from pfSense]**
+This confirmed that pfSense was acting as the DHCP server for the new internal segment.
+
+<img width="954" height="503" alt="pfSense GUI DHCP leases" src="https://github.com/user-attachments/assets/1b9aebb6-043a-4d5b-a2b4-09565321661a" />
+
+**Figure 6 – DHCP lease issued to Kali from pfSense**
 
 ### Kali Network Validation
 
@@ -221,7 +235,9 @@ This confirmed:
 - outbound internet access
 - working DNS resolution
 
-**[Insert Figure 7 – Connectivity validation from Kali through pfSense]**
+<img width="697" height="554" alt="Kali LAB_LAN connectivity" src="https://github.com/user-attachments/assets/c5db5d52-cb03-48b1-94fa-be03d226e910" />
+
+**Figure 7 – Connectivity validation from Kali through pfSense**
 
 ---
 
@@ -236,7 +252,7 @@ This caused the interface to hold two addresses at once:
 - old static IP from the original lab
 - new DHCP lease from pfSense
 
-The stale address had to be removed before the network configuration was clean.
+The stale address had to be removed before the network configuration was clean. The issue was resolved by removing the old static address from the Kali network profile so that the interface used only the DHCP lease issued by pfSense.
 
 ### Why Kali was migrated first
 
