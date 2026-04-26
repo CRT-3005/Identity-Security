@@ -11,6 +11,8 @@ The lab focuses on Kerberos and NTLM abuse, privileged account activity, service
 ## At a Glance
 
 - Active Directory identity security lab built in VirtualBox
+- Originally deployed on a flat `192.168.10.0/24` network for detection and hardening work
+- Later migrated behind pfSense onto a routed `192.168.50.0/24` subnet for network segmentation
 - Splunk-based detection engineering for Kerberos, NTLM, and SMB authentication abuse
 - SOC playbooks for alert investigation and response
 - Hardening validation for Windows LAPS and Kerberos controls
@@ -19,13 +21,14 @@ The lab focuses on Kerberos and NTLM abuse, privileged account activity, service
 ---
 
 ## Table of Contents
+
 1. [Lab Environment](#lab-environment)  
 2. [Skills Learned](#skills-learned)  
 3. [Tools Used](#tools-used)  
 4. [Workflow Overview](#workflow-overview)  
 5. [Detection Coverage](#detection-coverage)  
 6. [SOC Playbooks](#soc-playbooks)  
-7. [Hardening & Prevention](#hardening)  
+7. [Hardening & Network Segmentation](#hardening--network-segmentation)  
 8. [Dashboards](#dashboards)  
 9. [Key Takeaways](#key-takeaways)  
 10. [Next Improvements](#next-improvements)
@@ -36,8 +39,14 @@ The lab focuses on Kerberos and NTLM abuse, privileged account activity, service
 
 The lab simulates a small enterprise Active Directory environment used to generate, detect, and investigate identity-based attacks.
 
+The environment was originally built on a flat VirtualBox network using the `192.168.10.0/24` subnet. This supported the initial detection engineering, hardening validation, dashboard creation, and SOC playbook development.
+
+After the core identity security work was completed, the lab was migrated behind a lightweight pfSense firewall onto a new routed internal subnet, `192.168.50.0/24`. This change was made to improve the lab architecture, introduce a security boundary, and create a foundation for future segmentation and firewall rule testing.
+
 **Domain:** `ADProject.local`  
-**Network:** `192.168.10.0/24`
+**Original Network:** `192.168.10.0/24`  
+**Current Network:** `192.168.50.0/24` behind pfSense  
+**Current Gateway:** `192.168.50.1`
 
 ### Host Overview
 
@@ -47,19 +56,25 @@ The lab simulates a small enterprise Active Directory environment used to genera
 | TARGET-PC | Workstation | Windows 11 Pro | Domain-joined identity testing |
 | SPLUNK01 | SIEM | Ubuntu Server 22.04 | Log ingestion, correlation, and detection |
 | KALI | Attacker | Kali Linux | Kerberos, NTLM, and SMB attack simulation |
+| pfSense | Firewall / Gateway | pfSense CE | Lab gateway, routed subnet, and future firewall rule testing |
 
 ### IP Addressing
 
-| System | IP Address |
-|---|---|
-| Domain Controller | 192.168.10.7 |
-| Splunk Server | 192.168.10.10 |
-| Windows 11 Client | 192.168.10.100 |
-| Kali Linux | 192.168.10.250 |
+| System | Role | Original IP | Current IP |
+|---|---|---:|---:|
+| pfSense | Firewall / Gateway | N/A | `192.168.50.1` |
+| Domain Controller | AD DS / DNS | `192.168.10.7` | `192.168.50.20` |
+| Splunk Server | SIEM | `192.168.10.10` | `192.168.50.10` |
+| Windows 11 Client | Domain-joined workstation | `192.168.10.100` | `192.168.50.110` |
+| Kali Linux | Attack simulation host | `192.168.10.250` | `192.168.50.100` |
 
 ### Network Configuration
 
-All systems operate on the same internal network. Splunk Universal Forwarders on ADDC01 and TARGET-PC forward Windows logs to Splunk over TCP 9997.
+The lab initially operated as a flat internal network to support rapid build-out and testing of identity detections, hardening controls, dashboards, and SOC playbooks.
+
+The current architecture places the core lab systems behind pfSense on the `192.168.50.0/24` subnet. pfSense acts as the default gateway and provides a foundation for future firewall rules, controlled attack paths, and segmentation testing.
+
+Splunk Universal Forwarders on ADDC01 and TARGET-PC forward Windows logs to Splunk over TCP 9997. Forwarder configuration is being reviewed after the subnet migration to align ingestion with the new Splunk server address, `192.168.50.10`.
 
 ---
 
@@ -73,6 +88,7 @@ All systems operate on the same internal network. Splunk Universal Forwarders on
 - Identity attack investigation techniques
 - MITRE ATT&CK mapping for identity threats
 - Windows identity hardening (LAPS and Kerberos controls)
+- Network segmentation and firewall-backed lab migration using pfSense
 
 ---
 
@@ -84,6 +100,7 @@ All systems operate on the same internal network. Splunk Universal Forwarders on
 - **Active Directory (Windows Server 2022)**
 - **Windows 11 Pro**
 - **Kali Linux** (Kerbrute, CrackMapExec, Kerberos tooling)
+- **pfSense CE**
 - **VirtualBox**
 
 ---
@@ -113,6 +130,9 @@ The project follows a SOC workflow from telemetry generation to detection, inves
 7. **Hardening and Validation**  
    Identity controls are implemented and validated using live telemetry.
 
+8. **Network Segmentation**  
+   pfSense is used to place core lab systems behind a routed internal subnet and provide a foundation for future firewall rule testing.
+
 ---
 
 ## Detection Coverage
@@ -122,6 +142,7 @@ This section documents the identity-based threats and authentication abuse scena
 The detections are designed around realistic SOC use cases, with a focus on high-signal identity telemetry, correlation over time, and clear analyst decision points. Where relevant, detections are supported by tuning, dashboards, and hardening controls to show full detection lifecycle ownership rather than isolated alert creation.
 
 ### 🔐 Kerberos Password Spray
+
 Detects Kerberos password spray activity generated with **Kerbrute**.
 
 - **Event IDs:** 4768, 4771
@@ -133,6 +154,7 @@ Detects Kerberos password spray activity generated with **Kerbrute**.
 ---
 
 ### 🔐 NTLM Password Spray
+
 Detects NTLM password spray activity generated with **CrackMapExec**.
 
 - **Event ID:** 4625
@@ -144,6 +166,7 @@ Detects NTLM password spray activity generated with **CrackMapExec**.
 ---
 
 ### 🔐 SMB Authentication Abuse (Valid Accounts)
+
 Detects successful SMB authentication from valid credentials used in suspicious patterns.
 
 - **Event ID:** 4624 (Logon Type 3)
@@ -155,6 +178,7 @@ Detects successful SMB authentication from valid credentials used in suspicious 
 ---
 
 ### 🔐 Failed → Successful Authentication Correlation
+
 Correlates repeated authentication failures followed by a successful logon within a short time window.
 
 - **Event IDs:** 4625, 4624
@@ -166,6 +190,7 @@ Correlates repeated authentication failures followed by a successful logon withi
 ---
 
 ### 🔐 Privileged Account Authentication Monitoring
+
 Monitors authentication activity involving privileged or high-value accounts.
 
 - **Event IDs:** 4624, 4625
@@ -177,6 +202,7 @@ Monitors authentication activity involving privileged or high-value accounts.
 ---
 
 ### 🌍 Impossible Travel Authentication (Kerberos)
+
 Detects successful Kerberos authentication for the same account from multiple source IPs within a short time window.
 
 - **Event IDs:** 4768, 4769
@@ -188,6 +214,7 @@ Detects successful Kerberos authentication for the same account from multiple so
 ---
 
 ### 🔐 Kerberoasting – Weak Kerberos Encryption
+
 Detects Kerberos service tickets issued using non-AES encryption.
 
 - **Event ID:** 4769
@@ -205,6 +232,7 @@ SOC playbooks document the investigative and response actions taken after an ale
 Each playbook shows how alerts are validated, contextualised, and escalated using authentication telemetry, enrichment queries, and identity context. The focus is on practical analyst decision-making, false positive handling, and response guidance rather than theoretical incident response.
 
 ### NTLM Password Spray Response
+
 Supports investigation and response for suspected NTLM password spray activity.
 
 **Documentation:** `playbooks/ntlm-password-spray-playbook.md`
@@ -212,6 +240,7 @@ Supports investigation and response for suspected NTLM password spray activity.
 ---
 
 ### Kerberos Password Spray Response
+
 Supports investigation and response for suspected Kerberos password spray activity.
 
 **Documentation:** `playbooks/kerberos-password-spray-playbook.md`
@@ -233,6 +262,7 @@ Each playbook includes:
 This section covers the defensive controls implemented in the lab to reduce identity attack exposure and improve resilience against common authentication-based threats.
 
 ### 🛡 Windows LAPS Deployment
+
 Windows LAPS was deployed across the domain to reduce local administrator password reuse and limit lateral movement opportunities.
 
 - **Control Objective:** Unique local administrator passwords per host with automatic rotation
@@ -244,6 +274,7 @@ Windows LAPS was deployed across the domain to reduce local administrator passwo
 ---
 
 ### 🔐 Kerberos Hardening
+
 Kerberos authentication was hardened to reduce credential theft and offline cracking risk.
 
 - **Controls Implemented:** AES-only Kerberos encryption, Kerberoasting exposure review, and preauthentication validation across user accounts
@@ -271,6 +302,7 @@ A lightweight pfSense firewall VM was deployed to move the lab away from a flat 
 Custom Splunk dashboards provide SOC-level visibility into authentication activity, Kerberos security posture, and signs of identity abuse across the environment.
 
 ### 📊 Kerberos Security Posture Dashboard
+
 Provides continuous visibility into Kerberos service ticket activity and domain Kerberos security controls.
 
 - **Coverage:** Kerberos service ticket activity and encryption type usage
@@ -282,6 +314,7 @@ Provides continuous visibility into Kerberos service ticket activity and domain 
 ---
 
 ### 📊 Authentication Pressure Dashboard
+
 Provides analyst visibility into failed authentication activity and common account targeting patterns.
 
 - **Coverage:** Failed authentication volume, source IP targeting, and account targeting trends
@@ -301,6 +334,7 @@ Provides analyst visibility into failed authentication activity and common accou
 - Kerberos detections can also act as **regression controls**, helping identify security drift and the return of weaker legacy configurations.
 - SOC dashboards improve visibility into authentication posture and help analysts spot risk early and respond to suspicious activity faster.
 - Linking detections, hardening controls, and dashboards creates a full identity security lifecycle that reflects real SOC operations.
+- The lab evolved from a flat network into a firewall-backed subnet, showing how detection engineering work can be paired with improved network architecture and segmentation planning.
 
 ---
 
@@ -308,10 +342,13 @@ Provides analyst visibility into failed authentication activity and common accou
 
 Planned next steps for the project include:
 
+- Apply the renewed Splunk Developer license
+- Update Splunk Universal Forwarder outputs to use `192.168.50.10:9997`
+- Validate event ingestion from the Domain Controller and Windows client after subnet migration
+- Define and test pfSense firewall rules between Kali, endpoint, and infrastructure systems
 - Group membership abuse detection and monitoring for privileged roles
 - Additional Kerberos abuse detections and regression controls
 - Expanded SOC dashboards for identity posture and authentication visibility
 - Further detection tuning, false positive reduction, and SOC playbook development
 
 ---
-
