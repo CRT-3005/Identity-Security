@@ -385,6 +385,8 @@ This change supports future hardening such as:
 - controlling which hosts can reach Splunk management services
 - enforcing tighter segmentation between attacker, endpoint, and infrastructure systems
 
+At this stage, the focus was on migration and validation. Restrictive host-to-host firewall rules will be added in a later phase.
+
 ---
 
 ## Next Steps
