@@ -4,7 +4,7 @@
 
 The original lab operated on a flat VirtualBox network that allowed direct communication between the Domain Controller, Splunk server, Windows client, and Kali attack box. While this was fine for the initial build, it did not reflect a segmented network design.
 
-To improve the security architecture of the lab, I deployed a lightweight pfSense firewall VM and migrated the lab onto a new routed internal subnet. This introduced a security boundary between internal lab hosts and upstream connectivity, while creating a foundation for tighter traffic control and future firewall policy.
+To improve the security architecture of the lab, I deployed a lightweight pfSense firewall VM and migrated the lab onto a new routed internal subnet. This introduced a security boundary between internal lab hosts and upstream connectivity, while creating a base for future segmentation and firewall policy.
 
 ---
 
@@ -363,7 +363,7 @@ This allowed the client to use the DC at `192.168.50.20` for DNS and domain serv
 
 After moving Splunk to `192.168.50.10`, the Splunk Web interface was reachable from the migrated client. This confirmed that routing and connectivity to Splunk were working through the new firewall-backed subnet.
 
-Splunk login then showed that the Developer license had expired. This was treated as a separate application licensing issue, not a firewall or routing issue.
+Splunk Web then showed that the Developer license had expired. This was treated as a separate application licensing issue, not a firewall or routing issue.
 
 ---
 
@@ -372,6 +372,7 @@ Splunk login then showed that the Developer license had expired. This was treate
 Adding pfSense improved the lab in several ways:
 
 - introduced a proper firewall boundary
+- introduced planned static addressing for core infrastructure systems
 - replaced the flat network design with a routed internal segment
 - established a central default gateway for the new subnet
 - created a base for future access control between hosts
