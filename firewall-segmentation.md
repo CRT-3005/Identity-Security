@@ -4,7 +4,7 @@
 
 The original lab operated on a flat VirtualBox network that allowed direct communication between the Domain Controller, Splunk server, Windows client, and Kali attack box. While this was fine for the initial build, it did not reflect a segmented network design.
 
-To improve the security architecture of the lab, I deployed a lightweight pfSense firewall VM and began migrating systems onto a new routed internal subnet. This introduced a security boundary between internal lab hosts and upstream connectivity, while creating a foundation for tighter traffic control and future firewall policy.
+To improve the security architecture of the lab, I deployed a lightweight pfSense firewall VM and migrated the lab onto a new routed internal subnet. This introduced a security boundary between internal lab hosts and upstream connectivity, while creating a foundation for tighter traffic control and future firewall policy.
 
 ---
 
@@ -57,9 +57,9 @@ pfSense WAN (em0)
 pfSense LAN (em1) - 192.168.50.1/24
 |
 +-- Kali Linux
++-- Domain Controller
 +-- Windows Client
 +-- Splunk Server
-+-- Domain Controller
 ```
 
 The firewall now sits between the internal lab segment and upstream connectivity.
@@ -184,7 +184,7 @@ The old static IP configuration on Kali was removed, allowing the system to corr
 
 ---
 
-## Validation
+## Initial Validation
 
 ### pfSense Interface Validation
 
@@ -241,6 +241,81 @@ This confirmed:
 
 ---
 
+## Extended Host Migration
+
+After validating pfSense with Kali, I continued migrating the core lab systems onto the new `192.168.50.0/24` subnet behind the firewall.
+
+The migration order was adjusted during testing. The Domain Controller was moved earlier than originally planned so that the Windows client could authenticate, resolve domain DNS, and perform administrative actions after being moved to the new network.
+
+### Updated Host Addressing
+
+| Host | Role | Previous IP | New IP | Gateway | DNS |
+|---|---|---:|---:|---:|---:|
+| pfSense | Firewall / Gateway | N/A | `192.168.50.1` | N/A | N/A |
+| Splunk | SIEM | `192.168.10.10` | `192.168.50.10` | `192.168.50.1` | `192.168.50.20` |
+| ADDC01 | Domain Controller / DNS | `192.168.10.7` | `192.168.50.20` | `192.168.50.1` | `127.0.0.1` |
+| Target-PC | Windows Client | `192.168.10.100` | `192.168.50.110` | `192.168.50.1` | `192.168.50.20` |
+| Kali | Attack Host | `192.168.10.250` | `192.168.50.100` | `192.168.50.1` | DHCP |
+
+### Domain Controller Migration
+
+The Domain Controller was moved to `LAB_LAN` and readdressed from `192.168.10.7` to `192.168.50.20`.
+
+After the change, the DC was validated by confirming:
+
+- connectivity to pfSense at `192.168.50.1`
+- local DNS resolution using `127.0.0.1`
+- `adproject.local` resolving to `192.168.50.20`
+
+**[Insert Figure 9 – Domain Controller migrated to the new firewall subnet]**
+
+### Windows Client Migration
+
+The Windows client was moved to `LAB_LAN` and readdressed from `192.168.10.100` to `192.168.50.110`.
+
+The client was configured with:
+
+- default gateway: `192.168.50.1`
+- DNS server: `192.168.50.20`
+
+Validation confirmed:
+
+- connectivity to pfSense
+- connectivity to the Domain Controller
+- successful DNS resolution for `adproject.local`
+
+**[Insert Figure 10 – Windows client communicating with pfSense and the Domain Controller]**
+
+### Splunk Server Migration
+
+The Splunk server was moved from `192.168.10.10` to `192.168.50.10`.
+
+The updated Splunk network configuration used:
+
+- IP address: `192.168.50.10/24`
+- default gateway: `192.168.50.1`
+- DNS server: `192.168.50.20`
+
+After migration, Splunk Web was reachable from the client at:
+
+```text
+http://192.168.50.10:8000
+```
+
+This confirmed that the Splunk server was reachable on the new subnet behind pfSense.
+
+**[Insert Figure 11 – Splunk server readdressed to the new subnet]**
+
+**[Insert Figure 12 – Splunk Web reachable on 192.168.50.10:8000]**
+
+### Splunk License Note
+
+During validation, Splunk Web was reachable but the installed Developer license had expired. This was identified as a Splunk licensing issue rather than a network issue.
+
+A new Splunk Developer license was requested so the lab could continue using Splunk Enterprise features for detection engineering, dashboards, and alerting.
+
+---
+
 ## Troubleshooting Notes
 
 ### Kali retained its old static IP
@@ -258,14 +333,19 @@ This caused the interface to hold two addresses at once:
 
 The stale address had to be removed before the network configuration was clean. The issue was resolved by removing the old static address from the Kali network profile so that the interface used only the DHCP lease issued by pfSense.
 
-### Why Kali was migrated first
+### Domain dependency during Windows client migration
 
-Kali was moved before the Windows client, Splunk, or the Domain Controller because it was the least disruptive host to test. This reduced the risk of breaking:
+When the Windows client was moved to `LAB_LAN`, it still had its old static IP settings from the `192.168.10.0/24` network. This meant it could not reach pfSense or the Domain Controller.
 
-- domain services
-- DNS
-- authentication
-- Splunk ingestion
+Because the machine was domain-joined, administrative actions were unreliable while the client could not contact the DC. The migration plan was adjusted so the Domain Controller was moved to the new subnet before completing the Windows client configuration.
+
+This allowed the client to use the DC at `192.168.50.20` for DNS and domain services.
+
+### Splunk Web reachable but license expired
+
+After moving Splunk to `192.168.50.10`, the Splunk Web interface was reachable from the migrated client. This confirmed that routing and connectivity to Splunk were working through the new firewall-backed subnet.
+
+Splunk login then showed that the Developer license had expired. This was treated as a separate application licensing issue, not a firewall or routing issue.
 
 ---
 
@@ -290,16 +370,16 @@ This change supports future hardening such as:
 
 ## Next Steps
 
-The firewall deployment was completed and validated using Kali as the first migrated host.
+The firewall deployment and host migration have been completed for the main lab systems.
 
 The next planned steps are:
 
-1. move the Windows client behind pfSense
-2. validate domain connectivity and DNS behaviour
-3. move the Splunk server to the new subnet
-4. move the Domain Controller last
+1. apply the renewed Splunk Developer license
+2. update Splunk Universal Forwarder outputs to use `192.168.50.10:9997`
+3. validate event ingestion from the Domain Controller
+4. validate event ingestion from the Windows client
 5. define firewall rules between attacker, client, and infrastructure systems
-6. document the impact of segmentation on Splunk data ingestion
+6. document firewall rule testing and blocked traffic behaviour
 
 ---
 
@@ -307,4 +387,6 @@ The next planned steps are:
 
 This change moved the lab away from a flat virtual network and introduced a dedicated firewall boundary using pfSense. The deployment was kept lightweight to fit within the available host resources while still providing a meaningful security improvement.
 
-The migration was validated successfully by placing Kali behind the new firewall, confirming DHCP lease assignment, routing, and internet access through pfSense.
+The migration was validated by placing Kali behind the new firewall, confirming DHCP lease assignment, routing, and internet access through pfSense.
+
+The migration was then extended to the Domain Controller, Windows client, and Splunk server. This placed the core lab systems onto the new `192.168.50.0/24` subnet behind pfSense and created a stronger base for future segmentation, firewall rules, and Splunk-based monitoring.
