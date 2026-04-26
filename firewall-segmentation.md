@@ -267,7 +267,9 @@ After the change, the DC was validated by confirming:
 - local DNS resolution using `127.0.0.1`
 - `adproject.local` resolving to `192.168.50.20`
 
-**[Insert Figure 9 – Domain Controller migrated to the new firewall subnet]**
+<img width="465" height="466" alt="Domain Controller migrated to the new firewall subnet" src="https://github.com/user-attachments/assets/85215087-5730-4b60-9457-9dd36b742b5c" />
+
+**Figure 8 – Domain Controller migrated to the new firewall subnet**
 
 ### Windows Client Migration
 
@@ -284,7 +286,9 @@ Validation confirmed:
 - connectivity to the Domain Controller
 - successful DNS resolution for `adproject.local`
 
-**[Insert Figure 10 – Windows client communicating with pfSense and the Domain Controller]**
+<img width="725" height="1126" alt="Windows client communicating with pfSense and the Domain Controller" src="https://github.com/user-attachments/assets/1fc16a64-e5a8-4144-bf05-5a91bf37f1e0" />
+
+**Figure 9 – Windows client communicating with pfSense and the Domain Controller**
 
 ### Splunk Server Migration
 
@@ -296,7 +300,7 @@ The updated Splunk network configuration used:
 - default gateway: `192.168.50.1`
 - DNS server: `192.168.50.20`
 
-After migration, Splunk Web was reachable from the client at:
+After migration, Splunk network connectivity was validated from the new subnet. Splunk was reachable at `192.168.50.10`, and Splunk Web was accessible from the client at:
 
 ```text
 http://192.168.50.10:8000
@@ -304,13 +308,27 @@ http://192.168.50.10:8000
 
 This confirmed that the Splunk server was reachable on the new subnet behind pfSense.
 
-**[Insert Figure 11 – Splunk server readdressed to the new subnet]**
+<img width="373" height="277" alt="Splunk server readdressed to the new subnet" src="https://github.com/user-attachments/assets/18fe7862-3d5f-472b-a41e-287e8ed3a7bd" />
 
-**[Insert Figure 12 – Splunk Web reachable on 192.168.50.10:8000]**
+**Figure 10 – Splunk server readdressed to the new subnet**
+
+<img width="673" height="641" alt="Splunk connectivity validation on the new subnet" src="https://github.com/user-attachments/assets/743d5a81-b7c3-4843-a3de-089868c6cf7b" />
+
+**Figure 11 – Splunk connectivity validation on the new subnet**
 
 ### Splunk License Note
 
-During validation, Splunk Web was reachable but the installed Developer license had expired. This was identified as a Splunk licensing issue rather than a network issue.
+During validation, Splunk Web was reachable at:
+
+```text
+http://192.168.50.10:8000
+```
+
+However, the installed Developer license had expired. This confirmed that the issue was related to Splunk licensing rather than firewall routing, DNS, or subnet migration.
+
+<img width="749" height="420" alt="Splunk GUI reachable but license expired" src="https://github.com/user-attachments/assets/dc288250-2c53-4e94-9701-0731aefc8e3d" />
+
+**Figure 12 – Splunk Web reachable but Developer license expired**
 
 A new Splunk Developer license was requested so the lab could continue using Splunk Enterprise features for detection engineering, dashboards, and alerting.
 
@@ -329,7 +347,7 @@ This caused the interface to hold two addresses at once:
 
 <img width="1040" height="591" alt="Kali new LAB_LAN DHCP" src="https://github.com/user-attachments/assets/16f862e8-5c47-4f6c-95cd-c0186854b964" />
 
-**Figure 8 – Kali temporarily holding both the old static address and new DHCP lease**
+**Figure 13 – Kali temporarily holding both the old static address and new DHCP lease**
 
 The stale address had to be removed before the network configuration was clean. The issue was resolved by removing the old static address from the Kali network profile so that the interface used only the DHCP lease issued by pfSense.
 
