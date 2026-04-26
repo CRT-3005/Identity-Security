@@ -31,7 +31,8 @@ The lab focuses on Kerberos and NTLM abuse, privileged account activity, service
 7. [Hardening & Network Segmentation](#hardening--network-segmentation)  
 8. [Dashboards](#dashboards)  
 9. [Key Takeaways](#key-takeaways)  
-10. [Next Improvements](#next-improvements)
+10. [Next Improvements](#next-improvements)  
+11. [Project Status](#project-status)
 
 ---
 
@@ -149,7 +150,7 @@ Detects Kerberos password spray activity generated with **Kerbrute**.
 - **Detection Method:** Regex-assisted extraction from Security XML
 - **Why it matters:** Identifies broad password guessing attempts against domain accounts over Kerberos
 
-**Documentation:** `detections/kerberos-password-spray.md`
+**Documentation:** [`detections/kerberos-password-spray.md`](./detections/kerberos-password-spray.md)
 
 ---
 
@@ -161,7 +162,7 @@ Detects NTLM password spray activity generated with **CrackMapExec**.
 - **Detection Method:** Correlation based on distinct usernames per source IP
 - **Why it matters:** Highlights repeated password guessing attempts against multiple accounts from a single source
 
-**Documentation:** `detections/ntlm-password-spray.md`
+**Documentation:** [`detections/ntlm-password-spray.md`](./detections/ntlm-password-spray.md)
 
 ---
 
@@ -173,7 +174,7 @@ Detects successful SMB authentication from valid credentials used in suspicious 
 - **Detection Method:** Baseline comparison and source IP analysis
 - **Why it matters:** Helps identify unauthorised lateral movement or suspicious network logon activity using legitimate accounts
 
-**Documentation:** `detections/smb-authentication-abuse.md`
+**Documentation:** [`detections/smb-authentication-abuse.md`](./detections/smb-authentication-abuse.md)
 
 ---
 
@@ -185,7 +186,7 @@ Correlates repeated authentication failures followed by a successful logon withi
 - **Detection Method:** Short-window correlation of failed and successful authentication activity
 - **Why it matters:** Helps identify possible credential compromise, brute force success, or password reuse
 
-**Documentation:** `detections/failed-to-successful-authentication-correlation.md`
+**Documentation:** [`detections/failed-to-successful-authentication-correlation.md`](./detections/failed-to-successful-authentication-correlation.md)
 
 ---
 
@@ -197,7 +198,7 @@ Monitors authentication activity involving privileged or high-value accounts.
 - **Detection Method:** Focused monitoring of privileged account logons with tuning to remove expected administrative noise
 - **Why it matters:** Improves visibility of risky authentication activity involving elevated accounts
 
-**Documentation:** `detections/privileged-account-authentication-monitoring.md`
+**Documentation:** [`detections/privileged-account-authentication-monitoring.md`](./detections/privileged-account-authentication-monitoring.md)
 
 ---
 
@@ -209,7 +210,7 @@ Detects successful Kerberos authentication for the same account from multiple so
 - **Detection Method:** Normalisation and correlation of successful Kerberos authentication activity
 - **Why it matters:** Helps identify suspicious account use that may indicate credential misuse without relying on failed logons
 
-**Documentation:** `detections/impossible-travel-kerberos-authentication.md`
+**Documentation:** [`detections/impossible-travel-kerberos-authentication.md`](./detections/impossible-travel-kerberos-authentication.md)
 
 ---
 
@@ -221,7 +222,7 @@ Detects Kerberos service tickets issued using non-AES encryption.
 - **Detection Method:** Detection of service tickets issued with weak Kerberos encryption types
 - **Why it matters:** Acts as a regression control in an AES-hardened domain and helps identify weaker kerberoasting exposure
 
-**Documentation:** `detections/kerberoasting-weak-encryption-detection.md`
+**Documentation:** [`detections/kerberoasting-weak-encryption-detection.md`](./detections/kerberoasting-weak-encryption-detection.md)
 
 ---
 
@@ -235,7 +236,7 @@ Each playbook shows how alerts are validated, contextualised, and escalated usin
 
 Supports investigation and response for suspected NTLM password spray activity.
 
-**Documentation:** `playbooks/ntlm-password-spray-playbook.md`
+**Documentation:** [`playbooks/ntlm-password-spray-playbook.md`](./playbooks/ntlm-password-spray-playbook.md)
 
 ---
 
@@ -243,7 +244,7 @@ Supports investigation and response for suspected NTLM password spray activity.
 
 Supports investigation and response for suspected Kerberos password spray activity.
 
-**Documentation:** `playbooks/kerberos-password-spray-playbook.md`
+**Documentation:** [`playbooks/kerberos-password-spray-playbook.md`](./playbooks/kerberos-password-spray-playbook.md)
 
 ---
 
@@ -269,7 +270,7 @@ Windows LAPS was deployed across the domain to reduce local administrator passwo
 - **Validation:** Confirmed through PowerShell, Active Directory Users and Computers, and Event Viewer
 - **Why it matters:** Reduces shared local admin risk and limits credential reuse across systems
 
-**Documentation:** `hardening/laps-hardening.md`
+**Documentation:** [`hardening/laps-hardening.md`](./hardening/laps-hardening.md)
 
 ---
 
@@ -281,7 +282,7 @@ Kerberos authentication was hardened to reduce credential theft and offline crac
 - **Validation:** Confirmed using live Kerberos telemetry from Event IDs 4768 and 4769
 - **Why it matters:** Strengthens Kerberos authentication security and helps reduce weak ticket exposure in the domain
 
-**Documentation:** `hardening/kerberos-hardening.md`
+**Documentation:** [`hardening/kerberos-hardening.md`](./hardening/kerberos-hardening.md)
 
 ---
 
@@ -293,7 +294,7 @@ A lightweight pfSense firewall VM was deployed to move the lab away from a flat 
 - **Validation:** Confirmed Kali, the Domain Controller, Windows client, and Splunk server could communicate through the new `192.168.50.0/24` lab segment
 - **Why it matters:** Creates a stronger base for network segmentation, controlled attack paths, and future firewall rule testing
 
-**Documentation:** `firewall-segmentation.md`
+**Documentation:** [`firewall-segmentation.md`](./firewall-segmentation.md)
 
 ---
 
@@ -309,7 +310,7 @@ Provides continuous visibility into Kerberos service ticket activity and domain 
 - **Use Case:** AES-only enforcement validation and kerberoasting exposure monitoring
 - **Why it matters:** Helps identify weak encryption use, service account exposure, and configuration regressions
 
-**Documentation:** `dashboards/kerberos-security-posture.md`
+**Documentation:** [`dashboards/kerberos-security-posture.md`](./dashboards/kerberos-security-posture.md)
 
 ---
 
@@ -321,7 +322,7 @@ Provides analyst visibility into failed authentication activity and common accou
 - **Use Case:** Password spray identification and failed-to-successful authentication correlation
 - **Why it matters:** Helps analysts spot authentication abuse quickly and review potential compromise patterns
 
-**Documentation:** `dashboards/authentication-pressure-dashboard.md`
+**Documentation:** [`dashboards/authentication-pressure-dashboard.md`](./dashboards/authentication-pressure-dashboard.md)
 
 ---
 
@@ -350,5 +351,13 @@ Planned next steps for the project include:
 - Additional Kerberos abuse detections and regression controls
 - Expanded SOC dashboards for identity posture and authentication visibility
 - Further detection tuning, false positive reduction, and SOC playbook development
+
+---
+
+## Project Status
+
+Active lab project. Core identity detections, dashboards, SOC playbooks, hardening controls, and pfSense firewall segmentation have been documented.
+
+The lab has been migrated from the original flat `192.168.10.0/24` network to a firewall-backed `192.168.50.0/24` subnet. Current follow-up work focuses on renewing the Splunk Developer license, validating Universal Forwarder ingestion after subnet migration, and adding firewall rule testing.
 
 ---
