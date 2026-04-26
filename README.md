@@ -228,7 +228,7 @@ Each playbook includes:
 
 ---
 
-## Hardening
+## Hardening & Network Segmentation
 
 This section covers the defensive controls implemented in the lab to reduce identity attack exposure and improve resilience against common authentication-based threats.
 
@@ -251,6 +251,18 @@ Kerberos authentication was hardened to reduce credential theft and offline crac
 - **Why it matters:** Strengthens Kerberos authentication security and helps reduce weak ticket exposure in the domain
 
 **Documentation:** `hardening/kerberos-hardening.md`
+
+---
+
+### 🧱 Firewall Segmentation with pfSense
+
+A lightweight pfSense firewall VM was deployed to move the lab away from a flat VirtualBox network and onto a routed internal subnet.
+
+- **Control Objective:** Place core lab systems behind a dedicated firewall boundary and reduce unrestricted host-to-host communication
+- **Validation:** Confirmed Kali, the Domain Controller, Windows client, and Splunk server could communicate through the new `192.168.50.0/24` lab segment
+- **Why it matters:** Creates a stronger base for network segmentation, controlled attack paths, and future firewall rule testing
+
+**Documentation:** `firewall-segmentation.md`
 
 ---
 
