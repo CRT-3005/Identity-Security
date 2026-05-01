@@ -256,7 +256,7 @@ These fields improve detection and analysis capability.
 
 ## Sysmon Event Verification
 
-<img width="1885" height="538" alt="image" src="https://github.com/user-attachments/assets/8d4304a3-6f7b-4f8b-9e4f-8f96b7cb448f" />
+<img width="1885" height="538" alt="image" src="https://github.com/user-attachments/assets/8d4304a3-6f5d-4f8b-9e4f-7f96b7cb448f" />
 
 **Figure 11 – Sysmon Event Verification**  
 Sysmon telemetry was successfully ingested into Splunk under the sourcetype:
