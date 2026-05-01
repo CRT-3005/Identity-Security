@@ -223,7 +223,7 @@ Search results confirmed successful ingestion of Windows Event Logs from both th
 
 Each host reported Security, System, and Application logs under their respective indexes.
 
-> Note: This validation was completed before the pfSense subnet migration. Post-migration ingestion validation is pending until the renewed Splunk Developer license is applied.
+> Note: This initial validation was completed before the pfSense subnet migration. After the migration, ingestion was revalidated from both `ADDC01` and `TARGET-PC` once the renewed Splunk Developer license was applied.
 
 ---
 
@@ -329,12 +329,14 @@ This confirmed the Windows 11 endpoint still produced full identity telemetry.
 
 ## Next Steps
 
-### 🔐 Next Phase – Identity Attack Detection
+### 🔐 Identity Attack Detection
 
-With the environment configured and validated across both hosts, the next phase focused on simulating real-world identity attacks and analysing Kerberos, Sysmon, and Windows Security telemetry in Splunk.
+With the environment configured and validated across both hosts, the project moved into simulating real-world identity attacks and analysing Kerberos, Sysmon, and Windows Security telemetry in Splunk.
 
 👉 **[Detection Coverage](https://github.com/CRT-3005/Identity-Security/blob/main/detections/README.md)**
 
 ### 📡 Post-Migration Validation
 
-After the renewed Splunk Developer license is applied, the next validation step is to confirm that fresh events from ADDC01 and TARGET-PC are arriving in Splunk from the updated `192.168.50.10:9997` forwarder destination.
+After applying the renewed Splunk Developer license, fresh events from `ADDC01` and `TARGET-PC` were confirmed in Splunk using the updated `192.168.50.10:9997` forwarder destination.
+
+The next infrastructure phase is to define and test pfSense firewall rules while confirming that required identity telemetry still reaches Splunk.
