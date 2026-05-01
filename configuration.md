@@ -167,7 +167,7 @@ TcpTestSucceeded : True
 
 This confirmed that the Domain Controller and Windows client could reach the Splunk server on TCP port `9997` after the move to the `192.168.50.0/24` subnet.
 
-Full Splunk event ingestion validation will be completed after the renewed Splunk Developer license is applied and Splunk search access is restored.
+Full Splunk event ingestion validation was completed after the renewed Splunk Developer license was applied and Splunk search access was restored.
 
 ---
 
@@ -323,7 +323,7 @@ This confirmed the Windows 11 endpoint still produced full identity telemetry.
 | pfSense subnet migration to `192.168.50.0/24` | Completed |
 | Forwarder outputs updated to `192.168.50.10:9997` | Completed |
 | TCP connectivity to Splunk receiving port | Validated from ADDC01 and TARGET-PC |
-| Full Splunk event ingestion after migration | Pending renewed Splunk Developer license |
+| Full Splunk event ingestion after migration | Validated from ADDC01 and TARGET-PC |
 
 ---
 
