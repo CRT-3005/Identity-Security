@@ -345,8 +345,6 @@ Provides analyst visibility into failed authentication activity and common accou
 
 Planned next steps for the project include:
 
-- Apply the renewed Splunk Developer license
-- Validate event ingestion from the Domain Controller and Windows client after the subnet migration
 - Define and test pfSense firewall rules between Kali, endpoint, and infrastructure systems
 - Group membership abuse detection and monitoring for privileged roles
 - Additional Kerberos abuse detections and regression controls
@@ -359,6 +357,6 @@ Planned next steps for the project include:
 
 The lab has been migrated from the original flat `192.168.10.0/24` network to a firewall-backed `192.168.50.0/24` subnet. Splunk Universal Forwarder outputs have been updated to use the new Splunk server address at `192.168.50.10:9997`, with TCP connectivity confirmed from both the Domain Controller and Windows client.
 
-Current follow-up work focuses on applying the renewed Splunk Developer license, validating event ingestion after the subnet migration, and adding firewall rule testing.
+The renewed Splunk Developer license has been applied and post-migration event ingestion has been validated from ADDC01 and TARGET-PC. Current follow-up work focuses on adding pfSense firewall rule testing between attacker, endpoint, and infrastructure systems.
 
 ---
