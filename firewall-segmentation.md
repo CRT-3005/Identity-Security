@@ -316,7 +316,29 @@ This confirmed that the Splunk server was reachable on the new subnet behind pfS
 
 **Figure 11 – Splunk connectivity validation on the new subnet**
 
-### Splunk License Note
+### Splunk Forwarder Update
+
+After moving Splunk to `192.168.50.10`, the Splunk Universal Forwarder outputs on the Domain Controller and Windows client were updated from:
+
+```text
+192.168.10.10:9997
+```
+
+to:
+
+```text
+192.168.50.10:9997
+```
+
+TCP connectivity to the Splunk receiving port was confirmed from both Windows systems using:
+
+```powershell
+Test-NetConnection 192.168.50.10 -Port 9997
+```
+
+Both systems returned `TcpTestSucceeded: True`, confirming that the forwarders could reach the Splunk server on the new subnet.
+
+### Splunk License and Ingestion Validation
 
 During validation, Splunk Web was reachable at:
 
@@ -324,13 +346,13 @@ During validation, Splunk Web was reachable at:
 http://192.168.50.10:8000
 ```
 
-However, the installed Developer license had expired. This confirmed that the issue was related to Splunk licensing rather than firewall routing, DNS, or subnet migration.
+The installed Developer license had expired, which confirmed that the issue was related to Splunk licensing rather than firewall routing, DNS, or subnet migration.
 
 <img width="749" height="420" alt="Splunk GUI reachable but license expired" src="https://github.com/user-attachments/assets/dc288250-2c53-4e94-9701-0731aefc8e3d" />
 
 **Figure 12 – Splunk Web reachable but Developer license expired**
 
-A new Splunk Developer license was requested so the lab could continue using Splunk Enterprise features for detection engineering, dashboards, and alerting.
+After applying a renewed Splunk Developer license, Splunk search access was restored. Fresh events from both `ADDC01` and `TARGET-PC` were then visible in Splunk, confirming that post-migration event ingestion was working after the subnet migration and forwarder updates.
 
 ---
 
@@ -363,7 +385,7 @@ This allowed the client to use the DC at `192.168.50.20` for DNS and domain serv
 
 After moving Splunk to `192.168.50.10`, the Splunk Web interface was reachable from the migrated client. This confirmed that routing and connectivity to Splunk were working through the new firewall-backed subnet.
 
-Splunk Web then showed that the Developer license had expired. This was treated as a separate application licensing issue, not a firewall or routing issue.
+Splunk Web then showed that the Developer license had expired. This was treated as a separate application licensing issue, not a firewall or routing issue. After the renewed Developer license was applied, search access was restored and event ingestion from both Windows hosts was validated.
 
 ---
 
@@ -391,16 +413,14 @@ At this stage, the focus was on migration and validation. Restrictive host-to-ho
 
 ## Next Steps
 
-The firewall deployment and host migration have been completed for the main lab systems.
+The firewall deployment, host migration, Splunk forwarder update, and post-migration ingestion validation have been completed for the main lab systems.
 
 The next planned steps are:
 
-1. apply the renewed Splunk Developer license
-2. update Splunk Universal Forwarder outputs to use `192.168.50.10:9997`
-3. validate event ingestion from the Domain Controller
-4. validate event ingestion from the Windows client
-5. define firewall rules between attacker, client, and infrastructure systems
-6. document firewall rule testing and blocked traffic behaviour
+1. define firewall rules between attacker, client, and infrastructure systems
+2. document firewall rule testing and blocked traffic behaviour
+3. restrict unnecessary access to Splunk management services
+4. validate that required identity telemetry still reaches Splunk after firewall rules are applied
 
 ---
 
@@ -410,4 +430,4 @@ This change moved the lab away from a flat virtual network and introduced a dedi
 
 The migration was validated by placing Kali behind the new firewall, confirming DHCP lease assignment, routing, and internet access through pfSense.
 
-The migration was then extended to the Domain Controller, Windows client, and Splunk server. This placed the core lab systems onto the new `192.168.50.0/24` subnet behind pfSense and created a stronger base for future segmentation, firewall rules, and Splunk-based monitoring.
+The migration was then extended to the Domain Controller, Windows client, and Splunk server. Splunk Universal Forwarder outputs were updated to use `192.168.50.10:9997`, and post-migration ingestion was validated from both Windows hosts. This placed the core lab systems onto the new `192.168.50.0/24` subnet behind pfSense and created a stronger base for future segmentation, firewall rules, and Splunk-based monitoring.
