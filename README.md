@@ -300,6 +300,18 @@ A lightweight pfSense firewall VM was deployed to move the lab away from a flat 
 
 ---
 
+### 🧪 Firewall Rule Testing
+
+Firewall rule testing has been added as the next phase of the network segmentation work.
+
+- **Control Objective:** Move from basic routing behind pfSense to controlled firewall policy between attacker, endpoint, and infrastructure systems
+- **Validation Plan:** Test allowed and blocked traffic while confirming required identity telemetry still reaches Splunk
+- **Why it matters:** Demonstrates segmentation control testing rather than only documenting a network migration
+
+**Documentation:** [`firewall-rule-testing.md`](./firewall-rule-testing.md)
+
+---
+
 ## Dashboards
 
 Custom Splunk dashboards provide SOC-level visibility into authentication activity, Kerberos security posture, and signs of identity abuse across the environment.
@@ -345,7 +357,7 @@ Provides analyst visibility into failed authentication activity and common accou
 
 Planned next steps for the project include:
 
-- Define and test pfSense firewall rules between Kali, endpoint, and infrastructure systems
+- Define and test pfSense firewall rules between Kali, endpoint, and infrastructure systems using [`firewall-rule-testing.md`](./firewall-rule-testing.md)
 - Group membership abuse detection and monitoring for privileged roles
 - Additional Kerberos abuse detections and regression controls
 - Expanded SOC dashboards for identity posture and authentication visibility
@@ -357,6 +369,6 @@ Planned next steps for the project include:
 
 The lab has been migrated from the original flat `192.168.10.0/24` network to a firewall-backed `192.168.50.0/24` subnet. Splunk Universal Forwarder outputs have been updated to use the new Splunk server address at `192.168.50.10:9997`, with TCP connectivity confirmed from both the Domain Controller and Windows client.
 
-The renewed Splunk Developer license has been applied and post-migration event ingestion has been validated from ADDC01 and TARGET-PC. Current follow-up work focuses on adding pfSense firewall rule testing between attacker, endpoint, and infrastructure systems.
+The renewed Splunk Developer license has been applied and post-migration event ingestion has been validated from ADDC01 and TARGET-PC. Current follow-up work focuses on pfSense firewall rule testing between attacker, endpoint, and infrastructure systems.
 
 ---
