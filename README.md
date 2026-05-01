@@ -75,7 +75,9 @@ The lab initially operated as a flat internal network to support rapid build-out
 
 The current architecture places the core lab systems behind pfSense on the `192.168.50.0/24` subnet. pfSense acts as the default gateway and provides a foundation for future firewall rules, controlled attack paths, and segmentation testing.
 
-Splunk Universal Forwarders on ADDC01 and TARGET-PC forward Windows logs to Splunk over TCP 9997. Forwarder configuration is being reviewed after the subnet migration to align ingestion with the new Splunk server address, `192.168.50.10`.
+Splunk Universal Forwarders on ADDC01 and TARGET-PC forward Windows logs to Splunk over TCP 9997. After the subnet migration, the forwarder outputs were updated to point to the new Splunk server address at `192.168.50.10:9997`.
+
+Connectivity to the Splunk receiving port was confirmed from both Windows hosts using `Test-NetConnection`. Full event ingestion validation will be completed after the renewed Splunk Developer license is applied.
 
 ---
 
@@ -344,8 +346,7 @@ Provides analyst visibility into failed authentication activity and common accou
 Planned next steps for the project include:
 
 - Apply the renewed Splunk Developer license
-- Update Splunk Universal Forwarder outputs to use `192.168.50.10:9997`
-- Validate event ingestion from the Domain Controller and Windows client after subnet migration
+- Validate event ingestion from the Domain Controller and Windows client after the subnet migration
 - Define and test pfSense firewall rules between Kali, endpoint, and infrastructure systems
 - Group membership abuse detection and monitoring for privileged roles
 - Additional Kerberos abuse detections and regression controls
@@ -356,8 +357,8 @@ Planned next steps for the project include:
 
 ## Project Status
 
-Active lab project. Core identity detections, dashboards, SOC playbooks, hardening controls, and pfSense firewall segmentation have been documented.
+The lab has been migrated from the original flat `192.168.10.0/24` network to a firewall-backed `192.168.50.0/24` subnet. Splunk Universal Forwarder outputs have been updated to use the new Splunk server address at `192.168.50.10:9997`, with TCP connectivity confirmed from both the Domain Controller and Windows client.
 
-The lab has been migrated from the original flat `192.168.10.0/24` network to a firewall-backed `192.168.50.0/24` subnet. Current follow-up work focuses on renewing the Splunk Developer license, validating Universal Forwarder ingestion after subnet migration, and adding firewall rule testing.
+Current follow-up work focuses on applying the renewed Splunk Developer license, validating event ingestion after the subnet migration, and adding firewall rule testing.
 
 ---
