@@ -77,7 +77,7 @@ The current architecture places the core lab systems behind pfSense on the `192.
 
 Splunk Universal Forwarders on ADDC01 and TARGET-PC forward Windows logs to Splunk over TCP 9997. After the subnet migration, the forwarder outputs were updated to point to the new Splunk server address at `192.168.50.10:9997`.
 
-Connectivity to the Splunk receiving port was confirmed from both Windows hosts using `Test-NetConnection`. Full event ingestion validation will be completed after the renewed Splunk Developer license is applied.
+Connectivity to the Splunk receiving port was confirmed from both Windows hosts using `Test-NetConnection`. The renewed Splunk Developer license has been applied and post-migration event ingestion has been validated from ADDC01 and TARGET-PC.
 
 ---
 
