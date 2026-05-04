@@ -2,7 +2,7 @@
 
 ## Objective
 
-This document will track the next phase of the Identity Security lab network segmentation work.
+This document tracks the next phase of the Identity Security lab network segmentation work.
 
 After migrating the lab from the original flat `192.168.10.0/24` network to the pfSense-backed `192.168.50.0/24` subnet, the next step is to define and test firewall rules between attacker, endpoint, and infrastructure systems.
 
@@ -12,7 +12,7 @@ The goal is to move beyond basic network migration and validate that pfSense can
 
 ## Scope
 
-This testing phase will focus on traffic between the following systems:
+This testing phase focuses on traffic between the following systems:
 
 | Host | Role | IP Address |
 |---|---|---:|
@@ -40,19 +40,102 @@ The firewall rule testing phase will document:
 
 ## Baseline Connectivity
 
-Before applying restrictive firewall rules, baseline connectivity will be captured to show the starting state of the network.
+Before applying restrictive firewall rules, baseline connectivity was captured to show the starting state of the network.
 
-### Planned Tests
+### Baseline pfSense LAN Rule State
 
-| Source | Destination | Test | Expected Result |
+The pfSense LAN interface currently includes the default permissive LAN rule:
+
+```text
+IPv4 * | Source: LAN subnets | Destination: * | Port: * | Default allow LAN to any rule
+```
+
+This means hosts on the `192.168.50.0/24` LAN subnet can communicate broadly unless blocked by host firewalls or service-level controls.
+
+### Kali Network Baseline
+
+Kali received its address from pfSense DHCP and used pfSense as its default gateway.
+
+| Item | Result |
+|---|---|
+| Interface | `eth0` |
+| IP Address | `192.168.50.100/24` |
+| Default Gateway | `192.168.50.1` |
+| Address Source | DHCP |
+
+### Baseline Test Results
+
+| Source | Destination | Test | Result |
 |---|---|---|---|
-| Kali | pfSense | ICMP | To be tested |
-| Kali | ADDC01 | ICMP / SMB / Kerberos | To be tested |
-| Kali | TARGET-PC | ICMP / SMB | To be tested |
-| Kali | SPLUNK01 | TCP `8000` / TCP `9997` | To be tested |
-| TARGET-PC | ADDC01 | DNS / Kerberos / LDAP / SMB | To be tested |
-| ADDC01 | SPLUNK01 | TCP `9997` | To be tested |
-| TARGET-PC | SPLUNK01 | TCP `9997` | To be tested |
+| Kali `192.168.50.100` | pfSense `192.168.50.1` | ICMP ping | Successful |
+| Kali `192.168.50.100` | SPLUNK01 `192.168.50.10` | ICMP ping | Successful |
+| Kali `192.168.50.100` | SPLUNK01 `192.168.50.10` | TCP `8000` | Open |
+| Kali `192.168.50.100` | SPLUNK01 `192.168.50.10` | TCP `9997` | Open |
+| Kali `192.168.50.100` | ADDC01 `192.168.50.20` | ICMP ping | Successful |
+| Kali `192.168.50.100` | ADDC01 `192.168.50.20` | TCP `53` | Open |
+| Kali `192.168.50.100` | ADDC01 `192.168.50.20` | DNS lookup for `adproject.local` | Successful |
+| Kali `192.168.50.100` | ADDC01 `192.168.50.20` | TCP `88` | Open |
+| Kali `192.168.50.100` | ADDC01 `192.168.50.20` | TCP `389` | Not reachable |
+| Kali `192.168.50.100` | ADDC01 `192.168.50.20` | TCP `445` | Not reachable |
+| Kali `192.168.50.100` | TARGET-PC `192.168.50.110` | ICMP ping | Successful |
+| Kali `192.168.50.100` | TARGET-PC `192.168.50.110` | TCP `445` | Timed out |
+| TARGET-PC `192.168.50.110` | ADDC01 `192.168.50.20` | TCP `53` | Successful |
+| TARGET-PC `192.168.50.110` | ADDC01 `192.168.50.20` | TCP `88` | Successful |
+| TARGET-PC `192.168.50.110` | ADDC01 `192.168.50.20` | TCP `389` | Successful |
+| TARGET-PC `192.168.50.110` | ADDC01 `192.168.50.20` | TCP `445` | Successful |
+| TARGET-PC `192.168.50.110` | SPLUNK01 `192.168.50.10` | TCP `9997` | Successful |
+| ADDC01 `192.168.50.20` | SPLUNK01 `192.168.50.10` | TCP `9997` | Successful |
+
+### Baseline Observations
+
+The baseline tests confirmed that the lab currently operates with broad LAN-level access because of the default pfSense LAN allow rule.
+
+Key findings:
+
+- Kali can reach pfSense, Splunk, the Domain Controller, and the Windows client at the network layer.
+- Kali can access Splunk Web on TCP `8000` and the Splunk receiving port on TCP `9997`.
+- Kali can reach Domain Controller DNS on TCP `53` and Kerberos on TCP `88`.
+- Kali cannot reach LDAP TCP `389` or SMB TCP `445` on the Domain Controller during baseline testing.
+- Kali can ping the Windows client, but SMB TCP `445` to the client times out.
+- TARGET-PC can reach required Domain Controller services including DNS, Kerberos, LDAP, and SMB.
+- ADDC01 and TARGET-PC can both reach Splunk on TCP `9997` for log forwarding.
+
+The results show that pfSense is currently permissive at the LAN level, while Windows host firewall or service behaviour already limits some inbound access to Windows systems.
+
+---
+
+## Splunk Ingestion Baseline
+
+Splunk searches confirmed that fresh events were arriving from both Windows hosts before applying restrictive firewall rules.
+
+```spl
+index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
+| stats count by host sourcetype
+```
+
+This confirmed fresh data from both `ADDC01` and `TARGET-PC`.
+
+A second validation query confirmed fresh Windows event telemetry from `TARGET-PC`:
+
+```spl
+index=identity host=TARGET-PC earliest=-15m
+| rex "<EventID>(?<EventCode>\\d+)</EventID>"
+| stats count by sourcetype EventCode
+| sort sourcetype EventCode
+```
+
+Observed `TARGET-PC` event codes included:
+
+| EventCode | Count | Notes |
+|---:|---:|---|
+| `566` | 1 | Windows event telemetry |
+| `1500` | 1 | Windows event telemetry |
+| `1501` | 1 | Windows event telemetry |
+| `4624` | 10 | Successful logon activity |
+| `4648` | 2 | Explicit credential logon activity |
+| `6013` | 2 | System uptime event |
+
+This confirmed that event ingestion was working before firewall restrictions were introduced.
 
 ---
 
@@ -119,23 +202,31 @@ Screenshots and validation outputs will be added as testing progresses.
 ### Figure Placeholders
 
 - **Figure 1 – Baseline pfSense LAN rule configuration**
-- **Figure 2 – Baseline connectivity from Kali**
-- **Figure 3 – Allow rule for required Windows client to Domain Controller traffic**
-- **Figure 4 – Block rule preventing Kali access to Splunk Web**
-- **Figure 5 – Failed connection test from Kali to blocked service**
-- **Figure 6 – Post-rule Splunk ingestion validation from ADDC01 and TARGET-PC**
+- **Figure 2 – Kali baseline IP address and routing through pfSense**
+- **Figure 3 – Kali baseline access to Splunk Web and Splunk receiving port**
+- **Figure 4 – Windows client baseline access to required Domain Controller services**
+- **Figure 5 – Baseline Splunk ingestion before firewall rule changes**
+- **Figure 6 – Block rule preventing Kali access to Splunk Web**
+- **Figure 7 – Failed connection test from Kali to blocked service**
+- **Figure 8 – Post-rule Splunk ingestion validation from ADDC01 and TARGET-PC**
 
 ---
 
 ## Testing Notes
 
-Testing notes will be added during implementation.
+### Baseline Testing Notes
+
+- The pfSense LAN interface currently uses the default broad IPv4 allow rule from `LAN subnets` to any destination.
+- Some Windows services were not reachable from Kali even before restrictive pfSense rules were added.
+- Required domain traffic from TARGET-PC to ADDC01 was successful.
+- Required Splunk forwarding traffic from ADDC01 and TARGET-PC to SPLUNK01 was successful.
+- Baseline Splunk ingestion was validated before firewall rule changes.
 
 ---
 
 ## Security Outcome
 
-This phase will demonstrate that the lab network can move from basic routing behind pfSense to controlled firewall policy enforcement.
+This phase demonstrates that the lab network can move from basic routing behind pfSense to controlled firewall policy enforcement.
 
 The expected outcome is a segmented lab where required identity services and Splunk telemetry continue to function, while unnecessary attacker access to infrastructure systems is reduced.
 
@@ -143,4 +234,4 @@ The expected outcome is a segmented lab where required identity services and Spl
 
 ## Status
 
-Planned. Firewall rule testing has not yet started.
+Baseline testing completed. Firewall rule implementation has not yet started.
