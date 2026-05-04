@@ -52,6 +52,8 @@ IPv4 * | Source: LAN subnets | Destination: * | Port: * | Default allow LAN to a
 
 This means hosts on the `192.168.50.0/24` LAN subnet can communicate broadly unless blocked by host firewalls or service-level controls.
 
+> Figure 1 will be added here: baseline pfSense LAN rule configuration.
+
 ### Kali Network Baseline
 
 Kali received its address from pfSense DHCP and used pfSense as its default gateway.
@@ -63,26 +65,65 @@ Kali received its address from pfSense DHCP and used pfSense as its default gate
 | Default Gateway | `192.168.50.1` |
 | Address Source | DHCP |
 
-### Baseline Test Results
+> Figure 2 will be added here: Kali baseline IP address and routing through pfSense.
+
+### Kali to Splunk Baseline
+
+Kali was tested against the Splunk server to confirm baseline access before restrictive firewall rules were added.
 
 | Source | Destination | Test | Result |
 |---|---|---|---|
-| Kali `192.168.50.100` | pfSense `192.168.50.1` | ICMP ping | Successful |
 | Kali `192.168.50.100` | SPLUNK01 `192.168.50.10` | ICMP ping | Successful |
 | Kali `192.168.50.100` | SPLUNK01 `192.168.50.10` | TCP `8000` | Open |
 | Kali `192.168.50.100` | SPLUNK01 `192.168.50.10` | TCP `9997` | Open |
+
+This confirmed that Kali could reach both Splunk Web and the Splunk receiving port under the default permissive LAN rule.
+
+> Figure 3 will be added here: Kali baseline access to Splunk Web and Splunk receiving port.
+
+### Kali to Domain Controller Baseline
+
+Kali was tested against the Domain Controller to identify which identity services were reachable before adding restrictive firewall rules.
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
 | Kali `192.168.50.100` | ADDC01 `192.168.50.20` | ICMP ping | Successful |
 | Kali `192.168.50.100` | ADDC01 `192.168.50.20` | TCP `53` | Open |
 | Kali `192.168.50.100` | ADDC01 `192.168.50.20` | DNS lookup for `adproject.local` | Successful |
 | Kali `192.168.50.100` | ADDC01 `192.168.50.20` | TCP `88` | Open |
 | Kali `192.168.50.100` | ADDC01 `192.168.50.20` | TCP `389` | Not reachable |
 | Kali `192.168.50.100` | ADDC01 `192.168.50.20` | TCP `445` | Not reachable |
+
+### Kali to Windows Client Baseline
+
+Kali was tested against the Windows client to confirm baseline endpoint reachability.
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
 | Kali `192.168.50.100` | TARGET-PC `192.168.50.110` | ICMP ping | Successful |
 | Kali `192.168.50.100` | TARGET-PC `192.168.50.110` | TCP `445` | Timed out |
+
+### Windows Client to Domain Controller Baseline
+
+The Windows client was tested against the Domain Controller to confirm required domain traffic before firewall rules were tightened.
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
 | TARGET-PC `192.168.50.110` | ADDC01 `192.168.50.20` | TCP `53` | Successful |
 | TARGET-PC `192.168.50.110` | ADDC01 `192.168.50.20` | TCP `88` | Successful |
 | TARGET-PC `192.168.50.110` | ADDC01 `192.168.50.20` | TCP `389` | Successful |
 | TARGET-PC `192.168.50.110` | ADDC01 `192.168.50.20` | TCP `445` | Successful |
+
+This confirmed that required Windows domain traffic was working before firewall rules were changed.
+
+> Figure 4 will be added here: Windows client baseline access to required Domain Controller services.
+
+### Splunk Forwarding Baseline
+
+Forwarder connectivity to Splunk was validated from both Windows hosts.
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
 | TARGET-PC `192.168.50.110` | SPLUNK01 `192.168.50.10` | TCP `9997` | Successful |
 | ADDC01 `192.168.50.20` | SPLUNK01 `192.168.50.10` | TCP `9997` | Successful |
 
@@ -115,6 +156,8 @@ index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
 
 This confirmed fresh data from both `ADDC01` and `TARGET-PC`.
 
+> Figure 5 will be added here: baseline Splunk ingestion before firewall rule changes.
+
 A second validation query confirmed fresh Windows event telemetry from `TARGET-PC`:
 
 ```spl
@@ -136,6 +179,8 @@ Observed `TARGET-PC` event codes included:
 | `6013` | 2 | System uptime event |
 
 This confirmed that event ingestion was working before firewall restrictions were introduced.
+
+> Figure 6 will be added here: TARGET-PC event code validation before firewall rule changes.
 
 ---
 
@@ -192,23 +237,6 @@ index=identity sourcetype="WinEventLog:SecurityAll" earliest=-30m
 | stats count by host EventCode
 | sort host EventCode
 ```
-
----
-
-## Evidence
-
-Screenshots and validation outputs will be added as testing progresses.
-
-### Figure Placeholders
-
-- **Figure 1 – Baseline pfSense LAN rule configuration**
-- **Figure 2 – Kali baseline IP address and routing through pfSense**
-- **Figure 3 – Kali baseline access to Splunk Web and Splunk receiving port**
-- **Figure 4 – Windows client baseline access to required Domain Controller services**
-- **Figure 5 – Baseline Splunk ingestion before firewall rule changes**
-- **Figure 6 – Block rule preventing Kali access to Splunk Web**
-- **Figure 7 – Failed connection test from Kali to blocked service**
-- **Figure 8 – Post-rule Splunk ingestion validation from ADDC01 and TARGET-PC**
 
 ---
 
