@@ -221,6 +221,90 @@ The final rules will aim to preserve required lab functionality while reducing u
 
 ---
 
+## Initial Firewall Rule Test
+
+### Test 1 – Block Kali Access to Splunk Web
+
+The first firewall rule test attempted to block Kali from accessing Splunk Web on TCP `8000`.
+
+A block rule was created on the pfSense LAN interface with the following intent:
+
+| Field | Value |
+|---|---|
+| Action | Block |
+| Interface | LAN |
+| Protocol | IPv4 TCP |
+| Source | `192.168.50.100` |
+| Destination | `192.168.50.10` |
+| Destination Port | `8000` |
+| Description | Block Kali access to Splunk Web |
+
+The rule was placed above the default `LAN subnets to any` allow rule.
+
+> Figure 7 will be added here: pfSense rule blocking Kali access to Splunk Web.
+
+After applying the rule and resetting pfSense states, Kali was still able to connect to Splunk Web on TCP `8000`.
+
+```bash
+nc -vz 192.168.50.10 8000
+```
+
+The result still showed the port as open.
+
+> Figure 8 will be added here: same-subnet Kali to Splunk traffic bypassing pfSense LAN rule.
+
+### Test Result
+
+The firewall rule did not block the traffic because Kali and Splunk are on the same subnet:
+
+```text
+Kali:   192.168.50.100/24
+Splunk: 192.168.50.10/24
+Subnet: 192.168.50.0/24
+```
+
+Since both systems are on the same Layer 2 network, Kali communicates directly with Splunk through the VirtualBox internal network. That traffic does not route through pfSense, so the pfSense LAN firewall rule does not see or enforce the connection.
+
+### Key Finding
+
+This test confirmed an important segmentation limitation:
+
+```text
+A firewall can only enforce traffic that traverses it.
+```
+
+Placing all systems behind pfSense on a single subnet improves gateway control and provides a foundation for segmentation, but it does not provide true host-to-host segmentation between systems on the same subnet.
+
+To enforce Kali-to-Splunk restrictions through pfSense, Kali must be moved onto a separate routed subnet or interface, such as an OPT network.
+
+Example future design:
+
+```text
+Kali subnet: 192.168.60.0/24
+pfSense OPT1: 192.168.60.1
+Kali: 192.168.60.100
+```
+
+Traffic would then traverse pfSense before reaching the main lab subnet:
+
+```text
+Kali 192.168.60.100
+|
+pfSense OPT1 192.168.60.1
+|
+pfSense LAN 192.168.50.1
+|
+Splunk 192.168.50.10
+```
+
+At that point, pfSense could enforce a rule such as:
+
+```text
+Block 192.168.60.100 → 192.168.50.10 TCP 8000
+```
+
+---
+
 ## Rule Testing Methodology
 
 Each firewall rule change will be tested using a consistent process:
@@ -262,16 +346,26 @@ index=identity sourcetype="WinEventLog:SecurityAll" earliest=-30m
 - Required Splunk forwarding traffic from ADDC01 and TARGET-PC to SPLUNK01 was successful.
 - Baseline Splunk ingestion was validated before firewall rule changes.
 
+### Firewall Rule Testing Notes
+
+- The first pfSense rule attempted to block Kali from reaching Splunk Web on TCP `8000`.
+- The rule was correctly placed above the default LAN allow rule.
+- The connection remained open because Kali and Splunk are on the same `192.168.50.0/24` subnet.
+- Same-subnet traffic does not traverse pfSense, so pfSense cannot enforce host-to-host restrictions in this topology.
+- True attacker-to-infrastructure segmentation requires a separate routed subnet or pfSense interface for Kali.
+
 ---
 
 ## Security Outcome
 
-This phase demonstrates that the lab network can move from basic routing behind pfSense to controlled firewall policy enforcement.
+This phase demonstrates that the lab network can move from basic routing behind pfSense toward controlled firewall policy enforcement.
 
-The expected outcome is a segmented lab where required identity services and Splunk telemetry continue to function, while unnecessary attacker access to infrastructure systems is reduced.
+The initial firewall rule test showed that placing all systems behind pfSense on one subnet does not provide true host-to-host segmentation. To enforce attacker-to-infrastructure firewall rules, Kali must be placed on a separate routed subnet so traffic traverses pfSense.
+
+The expected outcome of the next phase is a segmented lab where required identity services and Splunk telemetry continue to function, while unnecessary attacker access to infrastructure systems is reduced.
 
 ---
 
 ## Status
 
-Baseline testing completed. Firewall rule implementation has not yet started.
+Baseline testing completed. Initial firewall rule testing identified a same-subnet segmentation limitation. The next phase is to move Kali onto a separate routed subnet or pfSense interface before continuing restrictive firewall rule testing.
