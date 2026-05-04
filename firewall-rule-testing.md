@@ -16,11 +16,11 @@ This testing phase focuses on traffic between the following systems:
 
 | Host | Role | IP Address |
 |---|---|---:|
-| pfSense | Firewall / Gateway | `192.168.50.1` |
+| pfSense | Firewall / Gateway | `192.168.50.1` / `192.168.60.1` |
 | ADDC01 | Domain Controller / DNS | `192.168.50.20` |
 | TARGET-PC | Windows Client | `192.168.50.110` |
 | SPLUNK01 | SIEM | `192.168.50.10` |
-| Kali | Attack Host | `192.168.50.100` |
+| Kali | Attack Host | Baseline: `192.168.50.100` / Segmented: `192.168.60.100` |
 
 ---
 
@@ -309,6 +309,168 @@ Block 192.168.60.100 → 192.168.50.10 TCP 8000
 
 ---
 
+## Routed Attacker Subnet Implementation
+
+To resolve the same-subnet limitation, Kali was moved onto a dedicated attacker subnet using a new pfSense OPT interface.
+
+### ATTACK_NET Interface Design
+
+| Component | Value |
+|---|---|
+| pfSense interface | `ATTACK_NET` / `em2` |
+| pfSense interface IP | `192.168.60.1/24` |
+| Attacker subnet | `192.168.60.0/24` |
+| Kali IP | `192.168.60.100/24` |
+| Kali gateway | `192.168.60.1` |
+| Main lab subnet | `192.168.50.0/24` |
+
+### pfSense OPT Interface Assignment
+
+A third adapter was added to the pfSense VM in VirtualBox and assigned as `OPT1` in pfSense. This interface was then renamed to `ATTACK_NET`.
+
+> Figure 9 will be added here: pfSense OPT interface created for Kali subnet.
+
+### ATTACK_NET Interface Configuration
+
+The `ATTACK_NET` interface was configured with a static IPv4 address of `192.168.60.1/24`.
+
+> Figure 10 will be added here: pfSense ATTACK_NET interface configured.
+
+### ATTACK_NET DHCP Scope
+
+DHCP was enabled on the `ATTACK_NET` interface so Kali could receive an address automatically.
+
+| Setting | Value |
+|---|---|
+| Subnet | `192.168.60.0/24` |
+| DHCP range start | `192.168.60.100` |
+| DHCP range end | `192.168.60.199` |
+
+> Figure 11 will be added here: DHCP scope configured for the ATTACK_NET subnet.
+
+### Kali Migration to ATTACK_NET
+
+Kali was moved from the main `LAB_LAN` network to the new `ATTACK_NET` VirtualBox internal network.
+
+After the change, Kali received the following configuration:
+
+| Item | Result |
+|---|---|
+| Interface | `eth0` |
+| IP address | `192.168.60.100/24` |
+| Default gateway | `192.168.60.1` |
+| Route | `192.168.60.0/24` via `eth0` |
+
+> Figure 12 will be added here: Kali moved to the dedicated attacker subnet.
+
+### Temporary ATTACK_NET Validation Rule
+
+A temporary allow rule was added on the `ATTACK_NET` interface to validate routing before creating restrictive firewall rules.
+
+| Field | Value |
+|---|---|
+| Action | Pass |
+| Interface | ATTACK_NET |
+| Protocol | IPv4 any |
+| Source | ATTACK_NET subnets |
+| Destination | Any |
+| Description | Temporary allow ATTACK_NET to any for validation |
+
+> Figure 13 will be added here: temporary allow rule for ATTACK_NET validation.
+
+### Kali Gateway Validation
+
+After adding the temporary allow rule, Kali successfully reached the pfSense `ATTACK_NET` gateway at `192.168.60.1`.
+
+> Figure 14 will be added here: Kali reaching the pfSense ATTACK_NET gateway.
+
+### Routed Access to Main Lab Subnet
+
+Kali was then tested against Splunk on the main lab subnet.
+
+```bash
+ping -c 4 192.168.50.10
+```
+
+The test succeeded, confirming that Kali could route from `192.168.60.0/24` to `192.168.50.0/24` through pfSense.
+
+> Figure 15 will be added here: Kali routing from ATTACK_NET to the main lab subnet.
+
+---
+
+## Routed Firewall Rule Test
+
+### Test 2 – Block ATTACK_NET Access to Splunk Web
+
+Before adding the block rule, Kali was tested against Splunk Web across the routed subnets.
+
+```bash
+nc -vz 192.168.50.10 8000
+```
+
+The port was open, confirming that the temporary validation rule allowed routed access from `ATTACK_NET` to Splunk Web.
+
+> Figure 16 will be added here: Kali baseline access to Splunk Web across routed subnets.
+
+A new block rule was then added on the `ATTACK_NET` interface above the temporary allow rule.
+
+| Field | Value |
+|---|---|
+| Action | Block |
+| Interface | ATTACK_NET |
+| Protocol | IPv4 TCP |
+| Source | ATTACK_NET subnets |
+| Destination | `192.168.50.10` |
+| Destination Port | `8000` |
+| Description | Block ATTACK_NET access to Splunk Web |
+
+> Figure 17 will be added here: pfSense rule blocking ATTACK_NET access to Splunk Web.
+
+After applying the rule, Kali was no longer able to connect to Splunk Web on TCP `8000`.
+
+```bash
+nc -vz 192.168.50.10 8000
+```
+
+The connection timed out, confirming that pfSense was now enforcing the block because the traffic traversed routed subnets.
+
+> Figure 18 will be added here: Kali blocked from accessing Splunk Web across routed subnets.
+
+### Scoped Rule Validation
+
+Additional testing confirmed that the block rule only affected Splunk Web access and did not break general routing or the Splunk receiving port.
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | ICMP ping | Successful |
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | TCP `9997` | Open |
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | TCP `8000` | Blocked |
+
+> Figure 19 will be added here: Kali routing and Splunk receiving port remain available after Splunk Web block.
+
+### Splunk Ingestion Validation After Firewall Rule
+
+Splunk ingestion was validated after blocking attacker subnet access to Splunk Web.
+
+```spl
+index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
+| stats count by host sourcetype
+```
+
+Fresh events were still visible from both Windows hosts.
+
+| Host | Sourcetype | Result |
+|---|---|---|
+| ADDC01 | `WinEventLog` | Events received |
+| ADDC01 | `WinEventLog:SecurityAll` | Events received |
+| TARGET-PC | `WinEventLog` | Events received |
+
+This confirmed that blocking attacker subnet access to Splunk Web did not affect Windows log forwarding to Splunk.
+
+> Figure 20 will be added here: Splunk ingestion validated after blocking attacker subnet access to Splunk Web.
+
+---
+
 ## Rule Testing Methodology
 
 Each firewall rule change will be tested using a consistent process:
@@ -354,9 +516,12 @@ index=identity sourcetype="WinEventLog:SecurityAll" earliest=-30m
 
 - The first pfSense rule attempted to block Kali from reaching Splunk Web on TCP `8000`.
 - The rule was correctly placed above the default LAN allow rule.
-- The connection remained open because Kali and Splunk are on the same `192.168.50.0/24` subnet.
-- Same-subnet traffic does not traverse pfSense, so pfSense cannot enforce host-to-host restrictions in this topology.
-- True attacker-to-infrastructure segmentation requires a separate routed subnet or pfSense interface for Kali.
+- The connection remained open because Kali and Splunk were on the same `192.168.50.0/24` subnet.
+- Same-subnet traffic did not traverse pfSense, so pfSense could not enforce host-to-host restrictions in that topology.
+- Kali was moved to a separate `192.168.60.0/24` attacker subnet using the pfSense `ATTACK_NET` interface.
+- After moving Kali to a routed subnet, pfSense successfully blocked Kali from accessing Splunk Web on TCP `8000`.
+- ICMP and Splunk receiving port TCP `9997` remained available, confirming the block was scoped to Splunk Web.
+- Splunk ingestion from ADDC01 and TARGET-PC remained functional after the rule was applied.
 
 ---
 
@@ -364,12 +529,12 @@ index=identity sourcetype="WinEventLog:SecurityAll" earliest=-30m
 
 This phase demonstrates that the lab network can move from basic routing behind pfSense toward controlled firewall policy enforcement.
 
-The initial firewall rule test showed that placing all systems behind pfSense on one subnet does not provide true host-to-host segmentation. To enforce attacker-to-infrastructure firewall rules, Kali must be placed on a separate routed subnet so traffic traverses pfSense.
+The initial firewall rule test showed that placing all systems behind pfSense on one subnet does not provide true host-to-host segmentation. To enforce attacker-to-infrastructure firewall rules, Kali had to be placed on a separate routed subnet so traffic traversed pfSense.
 
-The expected outcome of the next phase is a segmented lab where required identity services and Splunk telemetry continue to function, while unnecessary attacker access to infrastructure systems is reduced.
+After moving Kali to the `ATTACK_NET` subnet, pfSense successfully blocked attacker access to Splunk Web while allowing required routing and Splunk log ingestion to continue. This created a stronger foundation for future segmentation controls between attacker, endpoint, and infrastructure systems.
 
 ---
 
 ## Status
 
-Baseline testing completed. Initial firewall rule testing identified a same-subnet segmentation limitation. The next phase is to move Kali onto a separate routed subnet or pfSense interface before continuing restrictive firewall rule testing.
+Baseline testing completed. Same-subnet firewall rule limitation identified. Kali moved to a separate `ATTACK_NET` subnet. Routed firewall testing successfully blocked attacker subnet access to Splunk Web while preserving required Splunk ingestion.
