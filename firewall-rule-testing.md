@@ -241,7 +241,9 @@ A block rule was created on the pfSense LAN interface with the following intent:
 
 The rule was placed above the default `LAN subnets to any` allow rule.
 
-> Figure 7 will be added here: pfSense rule blocking Kali access to Splunk Web.
+<img width="920" height="48" alt="pfSense rule blocking Kali access to Splunk Web" src="https://github.com/user-attachments/assets/685453bc-882a-4971-834e-539ecb2eff71" />
+
+**Figure 7 – pfSense rule blocking Kali access to Splunk Web**
 
 After applying the rule and resetting pfSense states, Kali was still able to connect to Splunk Web on TCP `8000`.
 
@@ -251,7 +253,9 @@ nc -vz 192.168.50.10 8000
 
 The result still showed the port as open.
 
-> Figure 8 will be added here: same-subnet Kali to Splunk traffic bypassing pfSense LAN rule.
+<img width="450" height="74" alt="Same-subnet Kali to Splunk traffic bypassing pfSense LAN rule" src="https://github.com/user-attachments/assets/eb9c811e-00c3-486f-83c1-7db73fffafeb" />
+
+**Figure 8 – Same-subnet Kali to Splunk traffic bypassing pfSense LAN rule**
 
 ### Test Result
 
