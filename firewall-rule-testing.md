@@ -52,7 +52,9 @@ IPv4 * | Source: LAN subnets | Destination: * | Port: * | Default allow LAN to a
 
 This means hosts on the `192.168.50.0/24` LAN subnet can communicate broadly unless blocked by host firewalls or service-level controls.
 
-> Figure 1 will be added here: baseline pfSense LAN rule configuration.
+<img width="951" height="374" alt="Baseline pfSense LAN rule configuration" src="https://github.com/user-attachments/assets/96389670-d95c-4a89-8f40-4dab3eb7734c" />
+
+**Figure 1 – Baseline pfSense LAN rule configuration**
 
 ### Kali Network Baseline
 
@@ -65,7 +67,9 @@ Kali received its address from pfSense DHCP and used pfSense as its default gate
 | Default Gateway | `192.168.50.1` |
 | Address Source | DHCP |
 
-> Figure 2 will be added here: Kali baseline IP address and routing through pfSense.
+<img width="804" height="318" alt="Kali baseline IP address and routing through pfSense" src="https://github.com/user-attachments/assets/d039383d-3d0c-4009-b1db-89ec4a8b01af" />
+
+**Figure 2 – Kali baseline IP address and routing through pfSense**
 
 ### Kali to Splunk Baseline
 
@@ -79,7 +83,9 @@ Kali was tested against the Splunk server to confirm baseline access before rest
 
 This confirmed that Kali could reach both Splunk Web and the Splunk receiving port under the default permissive LAN rule.
 
-> Figure 3 will be added here: Kali baseline access to Splunk Web and Splunk receiving port.
+<img width="450" height="118" alt="Kali baseline access to Splunk Web and Splunk receiving port" src="https://github.com/user-attachments/assets/0840d936-6acb-4161-ad5a-b922d5eb4860" />
+
+**Figure 3 – Kali baseline access to Splunk Web and Splunk receiving port**
 
 ### Kali to Domain Controller Baseline
 
@@ -116,7 +122,9 @@ The Windows client was tested against the Domain Controller to confirm required 
 
 This confirmed that required Windows domain traffic was working before firewall rules were changed.
 
-> Figure 4 will be added here: Windows client baseline access to required Domain Controller services.
+<img width="708" height="214" alt="Windows client baseline access to required Domain Controller services" src="https://github.com/user-attachments/assets/2cd6e893-5530-4290-be0e-2d7adab08f4a" />
+
+**Figure 4 – Windows client baseline access to required Domain Controller services**
 
 ### Splunk Forwarding Baseline
 
@@ -156,7 +164,9 @@ index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
 
 This confirmed fresh data from both `ADDC01` and `TARGET-PC`.
 
-> Figure 5 will be added here: baseline Splunk ingestion before firewall rule changes.
+<img width="1027" height="355" alt="Baseline Splunk ingestion before firewall rule changes" src="https://github.com/user-attachments/assets/73e37ac4-bb51-4d86-a74e-7033e9e6ad5f" />
+
+**Figure 5 – Baseline Splunk ingestion before firewall rule changes**
 
 A second validation query confirmed fresh Windows event telemetry from `TARGET-PC`:
 
@@ -180,7 +190,9 @@ Observed `TARGET-PC` event codes included:
 
 This confirmed that event ingestion was working before firewall restrictions were introduced.
 
-> Figure 6 will be added here: TARGET-PC event code validation before firewall rule changes.
+<img width="1033" height="392" alt="TARGET-PC event code validation before firewall rule changes" src="https://github.com/user-attachments/assets/e84e2db6-80f2-4d89-b89b-67f7584dc72f" />
+
+**Figure 6 – TARGET-PC event code validation before firewall rule changes**
 
 ---
 
