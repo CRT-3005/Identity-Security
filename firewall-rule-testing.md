@@ -508,7 +508,7 @@ ping -c 4 192.168.50.10
 
 The TCP `9997` test succeeded and ICMP ping also succeeded, confirming that Kali could still reach the Splunk receiving port before the restriction was applied.
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Kali baseline access to the Splunk receiving port before ATTACK_NET restriction" src="PLACEHOLDER" />
+<img width="502" height="261" alt="Kali baseline splunk receiving port" src="https://github.com/user-attachments/assets/280afb70-c133-4ff5-8b07-1445e798a094" />
 
 **Figure 21 – Kali baseline access to the Splunk receiving port before ATTACK_NET restriction**
 
@@ -524,7 +524,7 @@ A new block rule was then added on the `ATTACK_NET` interface above the temporar
 | Destination Port | `9997` |
 | Description | Block ATTACK_NET access to Splunk receiving port |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="pfSense rule blocking ATTACK_NET access to the Splunk receiving port" src="PLACEHOLDER" />
+<img width="952" height="391" alt="pfSense block ATTACK_NET Splunk receiving port" src="https://github.com/user-attachments/assets/1251f4d4-cd69-461c-a03f-1730e02ef60c" />
 
 **Figure 22 – pfSense rule blocking ATTACK_NET access to the Splunk receiving port**
 
@@ -544,7 +544,7 @@ The tests confirmed that both Splunk Web and the Splunk receiving port were bloc
 | Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | ICMP ping | Successful |
 | Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | TCP `8000` | Blocked |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Kali blocked from Splunk Web and the Splunk receiving port while routing remains available" src="PLACEHOLDER" />
+<img width="501" height="278" alt="Kali blocked Splunk web and receiving port" src="https://github.com/user-attachments/assets/9733254f-5bac-40ab-84b3-28430f57071f" />
 
 **Figure 23 – Kali blocked from Splunk Web and the Splunk receiving port while routing remains available**
 
@@ -567,7 +567,7 @@ Fresh events were still visible from both Windows hosts.
 
 This confirmed that blocking `ATTACK_NET` access to TCP `9997` did not affect trusted Windows log forwarding from the main lab subnet.
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Splunk ingestion validated after blocking ATTACK_NET access to the Splunk receiving port" src="PLACEHOLDER" />
+<img width="1027" height="363" alt="Splunk ingestion after ATTACK_NET Splunk receiving port block" src="https://github.com/user-attachments/assets/c106d204-1689-492e-b81b-537d01f3462e" />
 
 **Figure 24 – Splunk ingestion validated after blocking ATTACK_NET access to the Splunk receiving port**
 
