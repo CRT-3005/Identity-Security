@@ -493,6 +493,84 @@ This confirmed that blocking attacker subnet access to Splunk Web did not affect
 
 **Figure 20 – Splunk ingestion validated after blocking attacker subnet access to Splunk Web**
 
+### Test 3 – Block ATTACK_NET Access to Splunk Receiving Port
+
+After confirming that Splunk Web access could be blocked across routed subnets, the next restriction focused on the Splunk receiving port, TCP `9997`.
+
+This port is required for trusted Splunk Universal Forwarders on `ADDC01` and `TARGET-PC`, but it is not required from the attacker subnet. Blocking this path reduces unnecessary attacker access to SIEM infrastructure while preserving required log ingestion from trusted systems.
+
+Before adding the new block rule, Kali was tested against the Splunk receiving port across the routed subnets.
+
+```bash
+nc -vz 192.168.50.10 9997
+ping -c 4 192.168.50.10
+```
+
+The TCP `9997` test succeeded and ICMP ping also succeeded, confirming that Kali could still reach the Splunk receiving port before the restriction was applied.
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Kali baseline access to the Splunk receiving port before ATTACK_NET restriction" src="PLACEHOLDER" />
+
+**Figure 21 – Kali baseline access to the Splunk receiving port before ATTACK_NET restriction**
+
+A new block rule was then added on the `ATTACK_NET` interface above the temporary allow rule.
+
+| Field | Value |
+|---|---|
+| Action | Block |
+| Interface | ATTACK_NET |
+| Protocol | IPv4 TCP |
+| Source | ATTACK_NET subnets |
+| Destination | `192.168.50.10` |
+| Destination Port | `9997` |
+| Description | Block ATTACK_NET access to Splunk receiving port |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="pfSense rule blocking ATTACK_NET access to the Splunk receiving port" src="PLACEHOLDER" />
+
+**Figure 22 – pfSense rule blocking ATTACK_NET access to the Splunk receiving port**
+
+After applying the rule and resetting pfSense states, Kali was tested again against Splunk TCP `9997`, Splunk TCP `8000`, and ICMP.
+
+```bash
+nc -vz 192.168.50.10 9997
+ping -c 4 192.168.50.10
+nc -vz 192.168.50.10 8000
+```
+
+The tests confirmed that both Splunk Web and the Splunk receiving port were blocked from `ATTACK_NET`, while ICMP routing to Splunk remained available.
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | TCP `9997` | Blocked |
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | ICMP ping | Successful |
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | TCP `8000` | Blocked |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Kali blocked from Splunk Web and the Splunk receiving port while routing remains available" src="PLACEHOLDER" />
+
+**Figure 23 – Kali blocked from Splunk Web and the Splunk receiving port while routing remains available**
+
+### Splunk Ingestion Validation After Splunk Receiving Port Block
+
+Splunk ingestion was validated after blocking attacker subnet access to the Splunk receiving port.
+
+```spl
+index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
+| stats count by host sourcetype
+```
+
+Fresh events were still visible from both Windows hosts.
+
+| Host | Sourcetype | Count |
+|---|---|---:|
+| ADDC01 | `WinEventLog` | 31 |
+| ADDC01 | `WinEventLog:SecurityAll` | 113 |
+| TARGET-PC | `WinEventLog` | 73 |
+
+This confirmed that blocking `ATTACK_NET` access to TCP `9997` did not affect trusted Windows log forwarding from the main lab subnet.
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Splunk ingestion validated after blocking ATTACK_NET access to the Splunk receiving port" src="PLACEHOLDER" />
+
+**Figure 24 – Splunk ingestion validated after blocking ATTACK_NET access to the Splunk receiving port**
+
 ---
 
 ## Rule Testing Methodology
@@ -544,8 +622,9 @@ index=identity sourcetype="WinEventLog:SecurityAll" earliest=-30m
 - Same-subnet traffic did not traverse pfSense, so pfSense could not enforce host-to-host restrictions in that topology.
 - Kali was moved to a separate `192.168.60.0/24` attacker subnet using the pfSense `ATTACK_NET` interface.
 - After moving Kali to a routed subnet, pfSense successfully blocked Kali from accessing Splunk Web on TCP `8000`.
-- ICMP and Splunk receiving port TCP `9997` remained available, confirming the block was scoped to Splunk Web.
-- Splunk ingestion from ADDC01 and TARGET-PC remained functional after the rule was applied.
+- A second ATTACK_NET block rule was added for Splunk TCP `9997`.
+- After applying the TCP `9997` block, Kali could no longer reach Splunk Web or the Splunk receiving port, while ICMP routing to Splunk remained available.
+- Splunk ingestion from ADDC01 and TARGET-PC remained functional after both ATTACK_NET restrictions were applied.
 
 ---
 
@@ -555,10 +634,12 @@ This phase demonstrates that the lab network can move from basic routing behind 
 
 The initial firewall rule test showed that placing all systems behind pfSense on one subnet does not provide true host-to-host segmentation. To enforce attacker-to-infrastructure firewall rules, Kali had to be placed on a separate routed subnet so traffic traversed pfSense.
 
-After moving Kali to the `ATTACK_NET` subnet, pfSense successfully blocked attacker access to Splunk Web while allowing required routing and Splunk log ingestion to continue. This created a stronger foundation for future segmentation controls between attacker, endpoint, and infrastructure systems.
+After moving Kali to the `ATTACK_NET` subnet, pfSense successfully blocked attacker access to Splunk Web while allowing required routing and Splunk log ingestion to continue. The follow-up TCP `9997` restriction further reduced unnecessary attacker access to SIEM infrastructure while preserving trusted Windows event forwarding from the main lab subnet.
+
+This created a stronger foundation for future segmentation controls between attacker, endpoint, and infrastructure systems.
 
 ---
 
 ## Status
 
-Baseline testing completed. Same-subnet firewall rule limitation identified. Kali moved to a separate `ATTACK_NET` subnet. Routed firewall testing successfully blocked attacker subnet access to Splunk Web while preserving required Splunk ingestion.
+Baseline testing completed. Same-subnet firewall rule limitation identified. Kali moved to a separate `ATTACK_NET` subnet. Routed firewall testing successfully blocked attacker subnet access to Splunk Web and the Splunk receiving port while preserving required Splunk ingestion.
