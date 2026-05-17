@@ -664,6 +664,178 @@ This confirmed that blocking `ATTACK_NET` access to Domain Controller LDAP and S
 
 **Figure 28 – Splunk ingestion validated after blocking ATTACK_NET access to Domain Controller LDAP and SMB**
 
+### Test 5 – Validate Blocked Enumeration Paths from ATTACK_NET
+
+After blocking direct `ATTACK_NET` access to Splunk and initial Domain Controller services, Kali tooling was used to validate the controls from an attacker-subnet perspective.
+
+The purpose of this test was to confirm that common enumeration paths were blocked, while selected identity testing paths remained available.
+
+#### Nmap Service Validation
+
+Kali first ran an `nmap` scan against the Domain Controller for DNS, Kerberos, LDAP, and SMB.
+
+```bash
+nmap -Pn -p 53,88,389,445 192.168.50.20
+```
+
+The results confirmed that DNS and Kerberos remained open, while LDAP and SMB were filtered.
+
+| Source | Destination | Port | Result |
+|---|---|---:|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `53` | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `88` | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `389` | Filtered |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `445` | Filtered |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Nmap validation of allowed and blocked Domain Controller services from ATTACK_NET" src="PLACEHOLDER" />
+
+**Figure 29 – Nmap validation of allowed and blocked Domain Controller services from ATTACK_NET**
+
+#### LDAP Query Validation
+
+Kali then attempted a basic unauthenticated LDAP query against the Domain Controller.
+
+```bash
+ldapsearch -x -H ldap://192.168.50.20 -o nettimeout=5 -s base
+```
+
+The query failed with the following result:
+
+```text
+ldap_sasl_bind(SIMPLE): Can't contact LDAP server (-1)
+ldapsearch exit code: 255
+```
+
+This confirmed that LDAP queries from `ATTACK_NET` could not reach the Domain Controller over TCP `389`.
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="ldapsearch blocked from querying Domain Controller LDAP from ATTACK_NET" src="PLACEHOLDER" />
+
+**Figure 30 – ldapsearch blocked from querying Domain Controller LDAP from ATTACK_NET**
+
+#### enum4linux-ng Enumeration Validation
+
+Kali then used `enum4linux-ng` to perform a broader enumeration check against the Domain Controller.
+
+The condensed output showed that LDAP TCP `389` and SMB TCP `445` were blocked, but it also identified two additional exposed services:
+
+| Service | Port | Result |
+|---|---:|---|
+| LDAP | TCP `389` | Timed out |
+| LDAPS | TCP `636` | Accessible |
+| SMB | TCP `445` | Timed out |
+| SMB over NetBIOS | TCP `139` | Accessible |
+| SMB sessions | N/A | Failed |
+
+This was a useful finding because the first Domain Controller restrictions only blocked LDAP TCP `389` and SMB TCP `445`. The enumeration test showed that LDAPS and NetBIOS also needed to be considered.
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="enum4linux-ng validation showing blocked LDAP and SMB with additional exposed LDAPS and NetBIOS paths" src="PLACEHOLDER" />
+
+**Figure 31 – enum4linux-ng validation showing blocked LDAP and SMB with additional exposed LDAPS and NetBIOS paths**
+
+#### Additional Service Exposure Validation
+
+A focused `nmap` scan confirmed the additional exposed services.
+
+```bash
+nmap -Pn -p 139,636 192.168.50.20
+```
+
+| Source | Destination | Port | Result |
+|---|---|---:|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `139` | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `636` | Open |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Nmap validation of additional Domain Controller services exposed to ATTACK_NET" src="PLACEHOLDER" />
+
+**Figure 32 – Nmap validation of additional Domain Controller services exposed to ATTACK_NET**
+
+#### Additional pfSense Block Rules
+
+Two new block rules were added to the `ATTACK_NET` interface above the temporary allow rule.
+
+| Field | LDAPS Rule Value | NetBIOS Rule Value |
+|---|---|---|
+| Action | Block | Block |
+| Interface | ATTACK_NET | ATTACK_NET |
+| Protocol | IPv4 TCP | IPv4 TCP |
+| Source | ATTACK_NET subnets | ATTACK_NET subnets |
+| Destination | `192.168.50.20` | `192.168.50.20` |
+| Destination Port | `636` | `139` |
+| Description | Block ATTACK_NET access to Domain Controller LDAPS | Block ATTACK_NET access to Domain Controller NetBIOS |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="pfSense rules blocking ATTACK_NET access to Domain Controller LDAPS and NetBIOS" src="PLACEHOLDER" />
+
+**Figure 33 – pfSense rules blocking ATTACK_NET access to Domain Controller LDAPS and NetBIOS**
+
+#### Post-Rule Enumeration Service Validation
+
+After applying the LDAPS and NetBIOS restrictions and resetting pfSense states, Kali repeated the `nmap` scan against Domain Controller enumeration services.
+
+```bash
+nmap -Pn -p 139,389,445,636 192.168.50.20
+```
+
+The scan confirmed that NetBIOS, LDAP, SMB, and LDAPS were now filtered from `ATTACK_NET`.
+
+| Source | Destination | Port | Result |
+|---|---|---:|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `139` | Filtered |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `389` | Filtered |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `445` | Filtered |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `636` | Filtered |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Nmap validation showing Domain Controller LDAP LDAPS SMB and NetBIOS filtered from ATTACK_NET" src="PLACEHOLDER" />
+
+**Figure 34 – Nmap validation showing Domain Controller LDAP, LDAPS, SMB, and NetBIOS filtered from ATTACK_NET**
+
+A follow-up `enum4linux-ng` validation was attempted after the additional block rules were applied. The tool could not complete useful enumeration because the relevant services were filtered and the process was terminated after repeated timeouts.
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="enum4linux-ng blocked from completing Domain Controller enumeration after additional ATTACK_NET restrictions" src="PLACEHOLDER" />
+
+**Figure 35 – enum4linux-ng blocked from completing Domain Controller enumeration after additional ATTACK_NET restrictions**
+
+#### Allowed Identity Testing Paths
+
+After blocking additional enumeration paths, DNS and Kerberos were tested again from Kali.
+
+```bash
+nmap -Pn -p 53,88 192.168.50.20
+```
+
+The scan confirmed that DNS and Kerberos remained open from `ATTACK_NET`.
+
+| Source | Destination | Port | Result |
+|---|---|---:|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `53` | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `88` | Open |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Nmap validation showing DNS and Kerberos remain available from ATTACK_NET" src="PLACEHOLDER" />
+
+**Figure 36 – Nmap validation showing DNS and Kerberos remain available from ATTACK_NET**
+
+### Splunk Ingestion Validation After Additional Domain Controller Restrictions
+
+Splunk ingestion was validated after adding the LDAPS and NetBIOS restrictions.
+
+```spl
+index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
+| stats count by host sourcetype
+```
+
+Fresh events were still visible from both Windows hosts.
+
+| Host | Sourcetype | Count |
+|---|---|---:|
+| ADDC01 | `WinEventLog` | 32 |
+| ADDC01 | `WinEventLog:SecurityAll` | 166 |
+| TARGET-PC | `WinEventLog` | 235 |
+
+This confirmed that blocking additional Domain Controller enumeration services from `ATTACK_NET` did not affect trusted Windows log forwarding from the main lab subnet.
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Splunk ingestion validated after blocking additional Domain Controller enumeration services from ATTACK_NET" src="PLACEHOLDER" />
+
+**Figure 37 – Splunk ingestion validated after blocking additional Domain Controller enumeration services from ATTACK_NET**
+
 ---
 
 ## Rule Testing Methodology
@@ -720,6 +892,10 @@ index=identity sourcetype="WinEventLog:SecurityAll" earliest=-30m
 - Baseline testing from `ATTACK_NET` showed that Kali could reach ADDC01 over DNS, Kerberos, LDAP, and SMB.
 - Two additional ATTACK_NET block rules were added for Domain Controller LDAP TCP `389` and SMB TCP `445`.
 - After applying the Domain Controller restrictions, Kali could still reach ADDC01 over ICMP, DNS TCP `53`, and Kerberos TCP `88`, but LDAP and SMB were blocked.
+- Kali enumeration tooling later identified that LDAPS TCP `636` and NetBIOS TCP `139` were still exposed from `ATTACK_NET`.
+- Additional ATTACK_NET block rules were added for Domain Controller LDAPS TCP `636` and NetBIOS TCP `139`.
+- Follow-up `nmap` testing confirmed that TCP `139`, `389`, `445`, and `636` were filtered from `ATTACK_NET`.
+- DNS TCP `53` and Kerberos TCP `88` remained available for controlled identity testing after the additional restrictions.
 - Splunk ingestion from ADDC01 and TARGET-PC remained functional after both Splunk and Domain Controller ATTACK_NET restrictions were applied.
 
 ---
@@ -734,10 +910,12 @@ After moving Kali to the `ATTACK_NET` subnet, pfSense successfully blocked attac
 
 Domain Controller testing then showed that Kali could reach DNS, Kerberos, LDAP, and SMB from the attacker subnet. LDAP and SMB were blocked from `ATTACK_NET` to reduce direct attacker access to high-value Domain Controller services, while DNS and Kerberos remained available for controlled identity testing.
 
-This created a stronger foundation for future segmentation controls between attacker, endpoint, and infrastructure systems.
+Kali enumeration tooling then identified additional exposed Domain Controller services over LDAPS TCP `636` and NetBIOS TCP `139`. These paths were also blocked, and follow-up validation confirmed that LDAP, LDAPS, SMB, and NetBIOS were filtered from `ATTACK_NET` while DNS and Kerberos remained available.
+
+This created a stronger foundation for future least-privilege segmentation between attacker, endpoint, and infrastructure systems.
 
 ---
 
 ## Status
 
-Baseline testing completed. Same-subnet firewall rule limitation identified. Kali moved to a separate `ATTACK_NET` subnet. Routed firewall testing successfully blocked attacker subnet access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, and Domain Controller SMB while preserving required Splunk ingestion.
+Baseline testing completed. Same-subnet firewall rule limitation identified. Kali moved to a separate `ATTACK_NET` subnet. Routed firewall testing successfully blocked attacker subnet access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, Domain Controller SMB, Domain Controller LDAPS, and Domain Controller NetBIOS while preserving required Splunk ingestion and controlled DNS/Kerberos testing paths.
