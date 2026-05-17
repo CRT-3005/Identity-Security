@@ -687,7 +687,7 @@ The results confirmed that DNS and Kerberos remained open, while LDAP and SMB we
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `389` | Filtered |
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `445` | Filtered |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Nmap validation of allowed and blocked Domain Controller services from ATTACK_NET" src="PLACEHOLDER" />
+<img width="528" height="217" alt="nmap domain controller filtered services from ATTACK_NET" src="https://github.com/user-attachments/assets/55f2e722-13bf-4178-bff5-c8f0b2d71e2f" />
 
 **Figure 29 – Nmap validation of allowed and blocked Domain Controller services from ATTACK_NET**
 
@@ -708,7 +708,7 @@ ldapsearch exit code: 255
 
 This confirmed that LDAP queries from `ATTACK_NET` could not reach the Domain Controller over TCP `389`.
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="ldapsearch blocked from querying Domain Controller LDAP from ATTACK_NET" src="PLACEHOLDER" />
+<img width="524" height="87" alt="ldapsearch blocked domain controller ldap from ATTACK_NET" src="https://github.com/user-attachments/assets/36a694d0-00e9-4ec9-b961-cd9cbf236360" />
 
 **Figure 30 – ldapsearch blocked from querying Domain Controller LDAP from ATTACK_NET**
 
@@ -728,7 +728,7 @@ The condensed output showed that LDAP TCP `389` and SMB TCP `445` were blocked, 
 
 This was a useful finding because the first Domain Controller restrictions only blocked LDAP TCP `389` and SMB TCP `445`. The enumeration test showed that LDAPS and NetBIOS also needed to be considered.
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="enum4linux-ng validation showing blocked LDAP and SMB with additional exposed LDAPS and NetBIOS paths" src="PLACEHOLDER" />
+<img width="1044" height="234" alt="enum4linux ng identifies blocked and exposed domain controller services" src="https://github.com/user-attachments/assets/42418a54-d6aa-485e-950a-61fd7571b112" />
 
 **Figure 31 – enum4linux-ng validation showing blocked LDAP and SMB with additional exposed LDAPS and NetBIOS paths**
 
@@ -745,7 +745,7 @@ nmap -Pn -p 139,636 192.168.50.20
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `139` | Open |
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `636` | Open |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Nmap validation of additional Domain Controller services exposed to ATTACK_NET" src="PLACEHOLDER" />
+<img width="526" height="186" alt="nmap validation of additional domain controller services from ATTACK_NET" src="https://github.com/user-attachments/assets/670b448a-ee51-49cb-ae38-ff5f6b428072" />
 
 **Figure 32 – Nmap validation of additional Domain Controller services exposed to ATTACK_NET**
 
@@ -763,7 +763,7 @@ Two new block rules were added to the `ATTACK_NET` interface above the temporary
 | Destination Port | `636` | `139` |
 | Description | Block ATTACK_NET access to Domain Controller LDAPS | Block ATTACK_NET access to Domain Controller NetBIOS |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="pfSense rules blocking ATTACK_NET access to Domain Controller LDAPS and NetBIOS" src="PLACEHOLDER" />
+<img width="953" height="353" alt="pfSense block ATTACK_NET access to domain controller via ldaps and netbios" src="https://github.com/user-attachments/assets/f5680886-33a4-4829-b9a5-be2a1b36a129" />
 
 **Figure 33 – pfSense rules blocking ATTACK_NET access to Domain Controller LDAPS and NetBIOS**
 
@@ -784,13 +784,13 @@ The scan confirmed that NetBIOS, LDAP, SMB, and LDAPS were now filtered from `AT
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `445` | Filtered |
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `636` | Filtered |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Nmap validation showing Domain Controller LDAP LDAPS SMB and NetBIOS filtered from ATTACK_NET" src="PLACEHOLDER" />
+<img width="527" height="216" alt="nmap validation domain controller enumeration services filtered" src="https://github.com/user-attachments/assets/b6ed8aa9-df2a-4cff-a28f-1e63eccdb597" />
 
 **Figure 34 – Nmap validation showing Domain Controller LDAP, LDAPS, SMB, and NetBIOS filtered from ATTACK_NET**
 
 A follow-up `enum4linux-ng` validation was attempted after the additional block rules were applied. The tool could not complete useful enumeration because the relevant services were filtered and the process was terminated after repeated timeouts.
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="enum4linux-ng blocked from completing Domain Controller enumeration after additional ATTACK_NET restrictions" src="PLACEHOLDER" />
+**
 
 **Figure 35 – enum4linux-ng blocked from completing Domain Controller enumeration after additional ATTACK_NET restrictions**
 
@@ -809,7 +809,7 @@ The scan confirmed that DNS and Kerberos remained open from `ATTACK_NET`.
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `53` | Open |
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `88` | Open |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Nmap validation showing DNS and Kerberos remain available from ATTACK_NET" src="PLACEHOLDER" />
+<img width="524" height="182" alt="nmap validation dns and kerberos remain available from ATTACK_NET" src="https://github.com/user-attachments/assets/cc498b8b-863e-4919-a0de-870b2afadd53" />
 
 **Figure 36 – Nmap validation showing DNS and Kerberos remain available from ATTACK_NET**
 
@@ -832,7 +832,7 @@ Fresh events were still visible from both Windows hosts.
 
 This confirmed that blocking additional Domain Controller enumeration services from `ATTACK_NET` did not affect trusted Windows log forwarding from the main lab subnet.
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Splunk ingestion validated after blocking additional Domain Controller enumeration services from ATTACK_NET" src="PLACEHOLDER" />
+<img width="1043" height="355" alt="Splunk ingestion after additional domain controller enumeration blocks" src="https://github.com/user-attachments/assets/76cdefe3-212b-4277-9682-e091b85b9c12" />
 
 **Figure 37 – Splunk ingestion validated after blocking additional Domain Controller enumeration services from ATTACK_NET**
 
