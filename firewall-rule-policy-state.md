@@ -31,6 +31,8 @@ Kali now resides on a routed subnet, so traffic from `ATTACK_NET` to the main la
 | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | TCP `9997` | Block | Prevent ATTACK_NET access to the Splunk receiving port |
 | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `389` | Block | Restrict LDAP enumeration from ATTACK_NET |
 | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `445` | Block | Restrict SMB access from ATTACK_NET |
+| ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `636` | Block | Restrict LDAPS enumeration from ATTACK_NET |
+| ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `139` | Block | Restrict NetBIOS session access from ATTACK_NET |
 
 ---
 
@@ -42,6 +44,32 @@ Kali now resides on a routed subnet, so traffic from `ATTACK_NET` to the main la
 | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `88` | Allowed | Controlled Kerberos authentication testing |
 | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | ICMP | Allowed | Basic routing validation |
 | ATTACK_NET subnets | ADDC01 `192.168.50.20` | ICMP | Allowed | Basic routing validation |
+
+---
+
+## Enumeration Validation Finding
+
+Kali enumeration testing showed that blocking LDAP TCP `389` and SMB TCP `445` was not enough by itself.
+
+`enum4linux-ng` identified two additional exposed Domain Controller paths from `ATTACK_NET`:
+
+| Service | Port | Finding |
+|---|---:|---|
+| LDAPS | TCP `636` | Accessible from `ATTACK_NET` before the additional rule change |
+| SMB over NetBIOS | TCP `139` | Accessible from `ATTACK_NET` before the additional rule change |
+
+Follow-up `nmap` validation confirmed the additional exposure. New pfSense block rules were then added for TCP `636` and TCP `139`.
+
+Post-rule `nmap` testing confirmed that the following Domain Controller enumeration services were filtered from `ATTACK_NET`:
+
+| Service | Port | Final Result |
+|---|---:|---|
+| NetBIOS Session Service | TCP `139` | Filtered |
+| LDAP | TCP `389` | Filtered |
+| SMB | TCP `445` | Filtered |
+| LDAPS | TCP `636` | Filtered |
+
+DNS TCP `53` and Kerberos TCP `88` remained open for controlled identity testing.
 
 ---
 
@@ -69,6 +97,8 @@ The policy now blocks direct ATTACK_NET access to:
 - Splunk receiving port
 - Domain Controller LDAP
 - Domain Controller SMB
+- Domain Controller LDAPS
+- Domain Controller NetBIOS
 
 At the same time, it keeps selected paths available for testing:
 
@@ -108,9 +138,11 @@ A future final policy could use this model:
 | 4 | Pass | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | ICMP | Routing validation |
 | 5 | Block | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | TCP `8000` | Block Splunk Web |
 | 6 | Block | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | TCP `9997` | Block Splunk receiving port |
-| 7 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `389` | Block LDAP |
-| 8 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `445` | Block SMB |
-| 9 | Block | ATTACK_NET subnets | Any | Any | Default deny |
+| 7 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `139` | Block NetBIOS |
+| 8 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `389` | Block LDAP |
+| 9 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `445` | Block SMB |
+| 10 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `636` | Block LDAPS |
+| 11 | Block | ATTACK_NET subnets | Any | Any | Default deny |
 
 The final order may change depending on later lab requirements, but the main goal is clear: move from broad testing access to explicit allowed traffic.
 
@@ -118,4 +150,4 @@ The final order may change depending on later lab requirements, but the main goa
 
 ## Status
 
-ATTACK_NET segmentation is operational. Splunk Web, Splunk receiving, Domain Controller LDAP, and Domain Controller SMB are blocked from the attacker subnet. DNS and Kerberos remain available for controlled testing. The temporary allow rule remains in place pending final least-privilege hardening.
+ATTACK_NET segmentation is operational. Splunk Web, Splunk receiving, Domain Controller LDAP, SMB, LDAPS, and NetBIOS are blocked from the attacker subnet. DNS and Kerberos remain available for controlled testing. The temporary allow rule remains in place pending final least-privilege hardening.
