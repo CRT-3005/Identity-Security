@@ -36,6 +36,7 @@ By introducing pfSense, I was able to:
 - issue DHCP leases from the firewall
 - support a staged migration away from the original flat network
 - validate firewall rule enforcement between routed subnets
+- test real enumeration paths from Kali
 - create a more realistic security model for attack simulation and detection engineering
 
 ---
@@ -436,6 +437,10 @@ Validated restrictions include:
 | ATTACK_NET | Splunk `192.168.50.10` | TCP `9997` | Blocked |
 | ATTACK_NET | ADDC01 `192.168.50.20` | TCP `389` | Blocked |
 | ATTACK_NET | ADDC01 `192.168.50.20` | TCP `445` | Blocked |
+| ATTACK_NET | ADDC01 `192.168.50.20` | TCP `636` | Blocked |
+| ATTACK_NET | ADDC01 `192.168.50.20` | TCP `139` | Blocked |
+
+Kali enumeration testing added extra value here. `enum4linux-ng` showed that LDAPS TCP `636` and NetBIOS TCP `139` were still exposed after the first Domain Controller rules. Those findings were then validated with `nmap`, blocked in pfSense, and retested until LDAP, LDAPS, SMB, and NetBIOS were all filtered from `ATTACK_NET`.
 
 The following paths remain available for controlled testing:
 
@@ -487,6 +492,14 @@ The first attempt to block Kali access to Splunk Web did not work while Kali and
 
 This happened because the traffic stayed within the same Layer 2 subnet and did not route through pfSense. Moving Kali to `ATTACK_NET` resolved this limitation and allowed pfSense to enforce traffic between Kali and the main lab subnet.
 
+### Enumeration-driven rule refinement
+
+Initial Domain Controller firewall rules blocked LDAP TCP `389` and SMB TCP `445` from `ATTACK_NET`.
+
+Further Kali enumeration testing showed that LDAPS TCP `636` and NetBIOS TCP `139` were still reachable. This was resolved by adding extra ATTACK_NET block rules for both services.
+
+Follow-up `nmap` testing confirmed that TCP `139`, `389`, `445`, and `636` were filtered from the attacker subnet while DNS TCP `53` and Kerberos TCP `88` remained available.
+
 ---
 
 ## Security Outcome
@@ -499,6 +512,7 @@ Adding pfSense improved the lab in several ways:
 - established pfSense as the gateway for both main lab and attacker networks
 - enabled firewall enforcement between Kali and infrastructure systems
 - validated that attacker traffic to Splunk and Domain Controller services can be restricted
+- used Kali enumeration tools to identify and close extra Domain Controller exposure
 - confirmed that Splunk ingestion still works after firewall rule changes
 - improved the realism of the environment from a blue-team and detection engineering perspective
 
@@ -514,7 +528,7 @@ This change supports security testing such as:
 
 ## Next Steps
 
-The firewall deployment, host migration, Splunk forwarder update, post-migration ingestion validation, routed attacker subnet creation, and initial firewall rule testing have been completed.
+The firewall deployment, host migration, Splunk forwarder update, post-migration ingestion validation, routed attacker subnet creation, and enumeration-driven firewall rule testing have been completed.
 
 The next planned steps are:
 
@@ -533,4 +547,4 @@ The migration was validated by placing Kali behind the new firewall, confirming 
 
 The migration was then extended to the Domain Controller, Windows client, and Splunk server. Splunk Universal Forwarder outputs were updated to use `192.168.50.10:9997`, and post-migration ingestion was validated from both Windows hosts.
 
-The segmentation design was then improved by moving Kali to the dedicated `192.168.60.0/24` `ATTACK_NET` subnet. This allowed pfSense to enforce routed firewall rules against Splunk Web, the Splunk receiving port, Domain Controller LDAP, and Domain Controller SMB while preserving controlled DNS, Kerberos, ICMP, and trusted log forwarding paths.
+The segmentation design was then improved by moving Kali to the dedicated `192.168.60.0/24` `ATTACK_NET` subnet. This allowed pfSense to enforce routed firewall rules against Splunk Web, the Splunk receiving port, Domain Controller LDAP, SMB, LDAPS, and NetBIOS while preserving controlled DNS, Kerberos, ICMP, and trusted log forwarding paths.
