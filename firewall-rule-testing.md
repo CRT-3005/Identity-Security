@@ -597,7 +597,7 @@ The baseline showed that Kali could reach the Domain Controller over ICMP, DNS, 
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `389` LDAP | Open |
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `445` SMB | Open |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Kali baseline access to Domain Controller services from ATTACK_NET" src="PLACEHOLDER" />
+<img width="502" height="371" alt="Kali baseline domain controller access from ATTACK_NET" src="https://github.com/user-attachments/assets/93cd18a6-79ce-49b4-b5af-f23ca9c8088b" />
 
 **Figure 25 – Kali baseline access to Domain Controller services from ATTACK_NET**
 
@@ -613,7 +613,7 @@ Two new block rules were then added on the `ATTACK_NET` interface above the temp
 | Destination Port | `389` | `445` |
 | Description | Block ATTACK_NET access to Domain Controller LDAP | Block ATTACK_NET access to Domain Controller SMB |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="pfSense rules blocking ATTACK_NET access to Domain Controller LDAP and SMB" src="PLACEHOLDER" />
+<img width="951" height="358" alt="pfSense block ATTACK_NET domain controller ldap and smb" src="https://github.com/user-attachments/assets/28bb140e-031c-4a38-87f1-91fad937aa50" />
 
 **Figure 26 – pfSense rules blocking ATTACK_NET access to Domain Controller LDAP and SMB**
 
@@ -637,7 +637,7 @@ The tests confirmed that LDAP and SMB were blocked from `ATTACK_NET`, while ICMP
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `389` LDAP | Blocked |
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `445` SMB | Blocked |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Kali blocked from Domain Controller LDAP and SMB while DNS and Kerberos remain available" src="PLACEHOLDER" />
+<img width="541" height="376" alt="Kail blocked domain-controller ldap and smb" src="https://github.com/user-attachments/assets/8e45e764-805c-4b7b-9925-c1a464759ac0" />
 
 **Figure 27 – Kali blocked from Domain Controller LDAP and SMB while DNS and Kerberos remain available**
 
@@ -660,7 +660,7 @@ Fresh events were still visible from both Windows hosts.
 
 This confirmed that blocking `ATTACK_NET` access to Domain Controller LDAP and SMB did not affect trusted Windows log forwarding from the main lab subnet.
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Splunk ingestion validated after blocking ATTACK_NET access to Domain Controller LDAP and SMB" src="PLACEHOLDER" />
+<img width="1046" height="358" alt="Splunk ingestion after domain controller ldap and smb block" src="https://github.com/user-attachments/assets/0e2b4642-cebc-44cd-b726-fba57aacfe24" />
 
 **Figure 28 – Splunk ingestion validated after blocking ATTACK_NET access to Domain Controller LDAP and SMB**
 
