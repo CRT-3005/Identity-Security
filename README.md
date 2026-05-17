@@ -2,9 +2,9 @@
 
 ## Objective
 
-This project demonstrates identity security monitoring in an Active Directory lab from a SOC perspective. Using Splunk, it covers authentication telemetry collection, detection engineering, alert correlation, analyst investigation, and identity hardening validation.
+This project demonstrates identity security monitoring in an Active Directory lab from a SOC perspective. Using Splunk, it covers authentication telemetry collection, detection engineering, alert correlation, analyst investigation, identity hardening validation, and firewall-backed segmentation testing.
 
-The lab focuses on Kerberos and NTLM abuse, privileged account activity, service account risk, and dashboard-driven monitoring to show how identity threats can be detected, investigated, and reduced through defensive controls.
+The lab focuses on Kerberos and NTLM abuse, privileged account activity, service account risk, dashboard-driven monitoring, and network segmentation controls to show how identity threats can be detected, investigated, and reduced through defensive controls.
 
 ---
 
@@ -12,11 +12,13 @@ The lab focuses on Kerberos and NTLM abuse, privileged account activity, service
 
 - Active Directory identity security lab built in VirtualBox
 - Originally deployed on a flat `192.168.10.0/24` network for detection and hardening work
-- Later migrated behind pfSense onto a routed `192.168.50.0/24` subnet for network segmentation
+- Migrated behind pfSense onto a routed `192.168.50.0/24` main lab subnet
+- Kali moved to a dedicated pfSense `ATTACK_NET` subnet on `192.168.60.0/24`
 - Splunk-based detection engineering for Kerberos, NTLM, and SMB authentication abuse
 - SOC playbooks for alert investigation and response
 - Hardening validation for Windows LAPS and Kerberos controls
 - Dashboards for authentication pressure and Kerberos security posture
+- Firewall rule testing for Splunk, Domain Controller, and attacker subnet traffic paths
 
 ---
 
@@ -38,16 +40,18 @@ The lab focuses on Kerberos and NTLM abuse, privileged account activity, service
 
 ## Lab Environment
 
-The lab simulates a small enterprise Active Directory environment used to generate, detect, and investigate identity-based attacks.
+The lab simulates a small enterprise Active Directory environment used to generate, detect, investigate, and reduce identity-based risk.
 
 The environment was originally built on a flat VirtualBox network using the `192.168.10.0/24` subnet. This supported the initial detection engineering, hardening validation, dashboard creation, and SOC playbook development.
 
-After the core identity security work was completed, the lab was migrated behind a lightweight pfSense firewall onto a new routed internal subnet, `192.168.50.0/24`. This change was made to improve the lab architecture, introduce a security boundary, and create a foundation for future segmentation and firewall rule testing.
+After the core identity security work was completed, the lab was migrated behind a lightweight pfSense firewall onto a routed main lab subnet, `192.168.50.0/24`. Kali was later moved to a dedicated `ATTACK_NET` subnet, `192.168.60.0/24`, so traffic from the attacker host to core infrastructure traverses pfSense and can be filtered.
 
 **Domain:** `ADProject.local`  
 **Original Network:** `192.168.10.0/24`  
-**Current Network:** `192.168.50.0/24` behind pfSense  
-**Current Gateway:** `192.168.50.1`
+**Main Lab Subnet:** `192.168.50.0/24` behind pfSense  
+**ATTACK_NET Subnet:** `192.168.60.0/24` behind pfSense  
+**Main Lab Gateway:** `192.168.50.1`  
+**ATTACK_NET Gateway:** `192.168.60.1`
 
 ### Host Overview
 
@@ -56,28 +60,31 @@ After the core identity security work was completed, the lab was migrated behind
 | ADDC01 | Domain Controller | Windows Server 2022 | AD DS, DNS, authentication logging |
 | TARGET-PC | Workstation | Windows 11 Pro | Domain-joined identity testing |
 | SPLUNK01 | SIEM | Ubuntu Server 22.04 | Log ingestion, correlation, and detection |
-| KALI | Attacker | Kali Linux | Kerberos, NTLM, and SMB attack simulation |
-| pfSense | Firewall / Gateway | pfSense CE | Lab gateway, routed subnet, and future firewall rule testing |
+| KALI | Attack Host | Kali Linux | Kerberos, NTLM, and SMB attack simulation |
+| pfSense | Firewall / Gateway | pfSense CE | Lab gateway, routed subnets, and firewall rule testing |
 
 ### IP Addressing
 
 | System | Role | Original IP | Current IP |
 |---|---|---:|---:|
-| pfSense | Firewall / Gateway | N/A | `192.168.50.1` |
+| pfSense LAN | Main lab gateway | N/A | `192.168.50.1` |
+| pfSense ATTACK_NET | Attacker subnet gateway | N/A | `192.168.60.1` |
 | Domain Controller | AD DS / DNS | `192.168.10.7` | `192.168.50.20` |
 | Splunk Server | SIEM | `192.168.10.10` | `192.168.50.10` |
 | Windows 11 Client | Domain-joined workstation | `192.168.10.100` | `192.168.50.110` |
-| Kali Linux | Attack simulation host | `192.168.10.250` | `192.168.50.100` |
+| Kali Linux | Attack simulation host | `192.168.10.250` | `192.168.60.100` |
 
 ### Network Configuration
 
 The lab initially operated as a flat internal network to support rapid build-out and testing of identity detections, hardening controls, dashboards, and SOC playbooks.
 
-The current architecture places the core lab systems behind pfSense on the `192.168.50.0/24` subnet. pfSense acts as the default gateway and provides a foundation for future firewall rules, controlled attack paths, and segmentation testing.
+The current architecture places core lab systems behind pfSense on the `192.168.50.0/24` subnet. Kali resides on the separate `192.168.60.0/24` `ATTACK_NET` subnet. This design means traffic from Kali to Splunk and the Domain Controller must traverse pfSense before reaching the main lab subnet.
 
-Splunk Universal Forwarders on ADDC01 and TARGET-PC forward Windows logs to Splunk over TCP 9997. After the subnet migration, the forwarder outputs were updated to point to the new Splunk server address at `192.168.50.10:9997`.
+Splunk Universal Forwarders on ADDC01 and TARGET-PC forward Windows logs to Splunk over TCP `9997`. After the subnet migration, the forwarder outputs were updated to point to the Splunk server at `192.168.50.10:9997`.
 
 Connectivity to the Splunk receiving port was confirmed from both Windows hosts using `Test-NetConnection`. The renewed Splunk Developer license has been applied and post-migration event ingestion has been validated from ADDC01 and TARGET-PC.
+
+Firewall rule testing later confirmed that pfSense could block `ATTACK_NET` access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, and Domain Controller SMB while preserving trusted Windows log forwarding.
 
 ---
 
@@ -92,6 +99,8 @@ Connectivity to the Splunk receiving port was confirmed from both Windows hosts 
 - MITRE ATT&CK mapping for identity threats
 - Windows identity hardening (LAPS and Kerberos controls)
 - Network segmentation and firewall-backed lab migration using pfSense
+- Firewall rule validation across routed lab subnets
+- Segmentation testing while preserving required SIEM ingestion
 
 ---
 
@@ -110,7 +119,7 @@ Connectivity to the Splunk receiving port was confirmed from both Windows hosts 
 
 ## Workflow Overview
 
-The project follows a SOC workflow from telemetry generation to detection, investigation, and hardening validation.
+The project follows a SOC workflow from telemetry generation to detection, investigation, hardening, and segmentation validation.
 
 1. **Telemetry Generation**  
    Windows authentication events are generated across the domain, including Event IDs 4624, 4625, 4768, 4769, and 4771.
@@ -134,7 +143,10 @@ The project follows a SOC workflow from telemetry generation to detection, inves
    Identity controls are implemented and validated using live telemetry.
 
 8. **Network Segmentation**  
-   pfSense is used to place core lab systems behind a routed internal subnet and provide a foundation for future firewall rule testing.
+   pfSense routes the main lab and attacker subnets, allowing firewall rules to control traffic between Kali, Splunk, and the Domain Controller.
+
+9. **Firewall Rule Testing**  
+   Allowed and blocked traffic paths are tested while Splunk ingestion is validated after each change.
 
 ---
 
@@ -290,11 +302,11 @@ Kerberos authentication was hardened to reduce credential theft and offline crac
 
 ### 🧱 Firewall Segmentation with pfSense
 
-A lightweight pfSense firewall VM was deployed to move the lab away from a flat VirtualBox network and onto a routed internal subnet.
+A lightweight pfSense firewall VM was deployed to move the lab away from a flat VirtualBox network and onto routed internal subnets.
 
-- **Control Objective:** Place core lab systems behind a dedicated firewall boundary and reduce unrestricted host-to-host communication
-- **Validation:** Confirmed Kali, the Domain Controller, Windows client, and Splunk server could communicate through the new `192.168.50.0/24` lab segment
-- **Why it matters:** Creates a stronger base for network segmentation, controlled attack paths, and future firewall rule testing
+- **Control Objective:** Place core lab systems behind a firewall boundary and move Kali to a dedicated routed attacker subnet
+- **Validation:** Confirmed Kali, the Domain Controller, Windows client, and Splunk server could route through pfSense
+- **Why it matters:** Provides enforceable segmentation because attacker-to-infrastructure traffic now traverses pfSense
 
 **Documentation:** [`firewall-segmentation.md`](./firewall-segmentation.md)
 
@@ -302,13 +314,26 @@ A lightweight pfSense firewall VM was deployed to move the lab away from a flat 
 
 ### 🧪 Firewall Rule Testing
 
-Firewall rule testing has been added as the next phase of the network segmentation work.
+Firewall rule testing validated controlled traffic between `ATTACK_NET` and key infrastructure systems.
 
-- **Control Objective:** Move from basic routing behind pfSense to controlled firewall policy between attacker, endpoint, and infrastructure systems
-- **Validation Plan:** Test allowed and blocked traffic while confirming required identity telemetry still reaches Splunk
-- **Why it matters:** Demonstrates segmentation control testing rather than only documenting a network migration
+- **Control Objective:** Restrict unnecessary attacker subnet access to Splunk and Domain Controller services
+- **Validated Blocks:** Splunk Web TCP `8000`, Splunk receiving TCP `9997`, Domain Controller LDAP TCP `389`, and Domain Controller SMB TCP `445`
+- **Preserved Paths:** DNS TCP `53`, Kerberos TCP `88`, ICMP routing validation, and trusted Windows log forwarding
+- **Why it matters:** Demonstrates tested segmentation controls while confirming required identity telemetry still reaches Splunk
 
 **Documentation:** [`firewall-rule-testing.md`](./firewall-rule-testing.md)
+
+---
+
+### 📋 ATTACK_NET Policy State
+
+The current ATTACK_NET policy state documents the active restrictions, retained testing paths, temporary allow rule, and recommended future least-privilege rule model.
+
+- **Control Objective:** Summarise current attacker subnet policy after firewall rule validation
+- **Current State:** Explicit block rules are in place while a temporary allow rule remains for continued testing
+- **Next Step:** Replace the temporary allow rule with explicit allows and default deny behaviour during the final hardening phase
+
+**Documentation:** [`firewall-rule-policy-state.md`](./firewall-rule-policy-state.md)
 
 ---
 
@@ -348,8 +373,9 @@ Provides analyst visibility into failed authentication activity and common accou
 - Service accounts remain a key identity attack surface and should be monitored, hardened, and validated through live authentication telemetry.
 - Kerberos detections can also act as **regression controls**, helping identify security drift and the return of weaker legacy configurations.
 - SOC dashboards improve visibility into authentication posture and help analysts spot risk early and respond to suspicious activity faster.
-- Linking detections, hardening controls, and dashboards creates a full identity security lifecycle that reflects real SOC operations.
-- The lab evolved from a flat network into a firewall-backed subnet, showing how detection engineering work can be paired with improved network architecture and segmentation planning.
+- Linking detections, hardening controls, dashboards, and firewall validation creates a fuller identity security lifecycle that reflects real SOC operations.
+- The lab evolved from a flat network into a routed pfSense design, proving that firewall rules only enforce traffic that traverses the firewall.
+- Moving Kali to a dedicated `ATTACK_NET` subnet enabled tested segmentation between attacker tooling, Splunk, and Domain Controller services.
 
 ---
 
@@ -357,7 +383,8 @@ Provides analyst visibility into failed authentication activity and common accou
 
 Planned next steps for the project include:
 
-- Define and test pfSense firewall rules between Kali, endpoint, and infrastructure systems using [`firewall-rule-testing.md`](./firewall-rule-testing.md)
+- Replace the temporary ATTACK_NET allow rule with explicit allow rules and default deny behaviour
+- Validate final pfSense least-privilege policy without breaking Splunk ingestion or controlled Kerberos testing
 - Group membership abuse detection and monitoring for privileged roles
 - Additional Kerberos abuse detections and regression controls
 - Expanded SOC dashboards for identity posture and authentication visibility
@@ -367,8 +394,12 @@ Planned next steps for the project include:
 
 ## Project Status
 
-The lab has been migrated from the original flat `192.168.10.0/24` network to a firewall-backed `192.168.50.0/24` subnet. Splunk Universal Forwarder outputs have been updated to use the new Splunk server address at `192.168.50.10:9997`, with TCP connectivity confirmed from both the Domain Controller and Windows client.
+The lab has been migrated from the original flat `192.168.10.0/24` network to a firewall-backed routed design. Core infrastructure now resides on the `192.168.50.0/24` main lab subnet, while Kali resides on the dedicated `192.168.60.0/24` `ATTACK_NET` subnet.
 
-The renewed Splunk Developer license has been applied and post-migration event ingestion has been validated from ADDC01 and TARGET-PC. Current follow-up work focuses on pfSense firewall rule testing between attacker, endpoint, and infrastructure systems.
+Splunk Universal Forwarder outputs have been updated to use the Splunk server address at `192.168.50.10:9997`, with TCP connectivity confirmed from both the Domain Controller and Windows client. The renewed Splunk Developer license has been applied and post-migration event ingestion has been validated from ADDC01 and TARGET-PC.
+
+Firewall rule testing has validated that pfSense can block `ATTACK_NET` access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, and Domain Controller SMB while preserving trusted Windows log forwarding and controlled DNS/Kerberos testing paths.
+
+Current follow-up work focuses on replacing the temporary ATTACK_NET allow rule with explicit allow rules and default deny behaviour.
 
 ---
