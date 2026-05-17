@@ -19,6 +19,7 @@ The lab focuses on Kerberos and NTLM abuse, privileged account activity, service
 - Hardening validation for Windows LAPS and Kerberos controls
 - Dashboards for authentication pressure and Kerberos security posture
 - Firewall rule testing for Splunk, Domain Controller, and attacker subnet traffic paths
+- Enumeration-driven firewall refinement using Kali tools including `nmap`, `ldapsearch`, and `enum4linux-ng`
 
 ---
 
@@ -60,7 +61,7 @@ After the core identity security work was completed, the lab was migrated behind
 | ADDC01 | Domain Controller | Windows Server 2022 | AD DS, DNS, authentication logging |
 | TARGET-PC | Workstation | Windows 11 Pro | Domain-joined identity testing |
 | SPLUNK01 | SIEM | Ubuntu Server 22.04 | Log ingestion, correlation, and detection |
-| KALI | Attack Host | Kali Linux | Kerberos, NTLM, and SMB attack simulation |
+| KALI | Attack Host | Kali Linux | Kerberos, NTLM, SMB, LDAP, and enumeration testing |
 | pfSense | Firewall / Gateway | pfSense CE | Lab gateway, routed subnets, and firewall rule testing |
 
 ### IP Addressing
@@ -84,7 +85,9 @@ Splunk Universal Forwarders on ADDC01 and TARGET-PC forward Windows logs to Splu
 
 Connectivity to the Splunk receiving port was confirmed from both Windows hosts using `Test-NetConnection`. The renewed Splunk Developer license has been applied and post-migration event ingestion has been validated from ADDC01 and TARGET-PC.
 
-Firewall rule testing later confirmed that pfSense could block `ATTACK_NET` access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, and Domain Controller SMB while preserving trusted Windows log forwarding.
+Firewall rule testing later confirmed that pfSense could block `ATTACK_NET` access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, Domain Controller SMB, Domain Controller LDAPS, and Domain Controller NetBIOS while preserving trusted Windows log forwarding.
+
+Kali enumeration testing added further validation. `enum4linux-ng` showed that LDAPS TCP `636` and NetBIOS TCP `139` were still reachable after the first LDAP and SMB restrictions. These findings were confirmed with `nmap`, blocked in pfSense, and retested until LDAP, LDAPS, SMB, and NetBIOS were filtered from `ATTACK_NET`.
 
 ---
 
@@ -100,6 +103,7 @@ Firewall rule testing later confirmed that pfSense could block `ATTACK_NET` acce
 - Windows identity hardening (LAPS and Kerberos controls)
 - Network segmentation and firewall-backed lab migration using pfSense
 - Firewall rule validation across routed lab subnets
+- Enumeration-driven firewall policy refinement from Kali
 - Segmentation testing while preserving required SIEM ingestion
 
 ---
@@ -111,7 +115,12 @@ Firewall rule testing later confirmed that pfSense could block `ATTACK_NET` acce
 - **Splunk Add-on for Windows**
 - **Active Directory (Windows Server 2022)**
 - **Windows 11 Pro**
-- **Kali Linux** (Kerbrute, CrackMapExec, Kerberos tooling)
+- **Kali Linux**
+- **Kerbrute**
+- **CrackMapExec**
+- **nmap**
+- **ldapsearch**
+- **enum4linux-ng**
 - **pfSense CE**
 - **VirtualBox**
 
@@ -147,6 +156,9 @@ The project follows a SOC workflow from telemetry generation to detection, inves
 
 9. **Firewall Rule Testing**  
    Allowed and blocked traffic paths are tested while Splunk ingestion is validated after each change.
+
+10. **Enumeration-Driven Refinement**  
+    Kali tools are used to check real enumeration paths and identify services that need extra firewall restrictions.
 
 ---
 
@@ -317,7 +329,9 @@ A lightweight pfSense firewall VM was deployed to move the lab away from a flat 
 Firewall rule testing validated controlled traffic between `ATTACK_NET` and key infrastructure systems.
 
 - **Control Objective:** Restrict unnecessary attacker subnet access to Splunk and Domain Controller services
-- **Validated Blocks:** Splunk Web TCP `8000`, Splunk receiving TCP `9997`, Domain Controller LDAP TCP `389`, and Domain Controller SMB TCP `445`
+- **Validated Splunk Blocks:** Splunk Web TCP `8000` and Splunk receiving TCP `9997`
+- **Validated Domain Controller Blocks:** LDAP TCP `389`, SMB TCP `445`, LDAPS TCP `636`, and NetBIOS TCP `139`
+- **Enumeration Validation:** `enum4linux-ng` identified LDAPS and NetBIOS exposure after the first LDAP/SMB restrictions, which were then blocked and retested with `nmap`
 - **Preserved Paths:** DNS TCP `53`, Kerberos TCP `88`, ICMP routing validation, and trusted Windows log forwarding
 - **Why it matters:** Demonstrates tested segmentation controls while confirming required identity telemetry still reaches Splunk
 
@@ -331,6 +345,7 @@ The current ATTACK_NET policy state documents the active restrictions, retained 
 
 - **Control Objective:** Summarise current attacker subnet policy after firewall rule validation
 - **Current State:** Explicit block rules are in place while a temporary allow rule remains for continued testing
+- **Blocked Paths:** Splunk Web, Splunk receiving, LDAP, SMB, LDAPS, and NetBIOS from `ATTACK_NET`
 - **Next Step:** Replace the temporary allow rule with explicit allows and default deny behaviour during the final hardening phase
 
 **Documentation:** [`firewall-rule-policy-state.md`](./firewall-rule-policy-state.md)
@@ -368,14 +383,15 @@ Provides analyst visibility into failed authentication activity and common accou
 ## Key Takeaways
 
 - Identity-based attacks generate high-value telemetry when Windows authentication auditing is configured correctly and centrally ingested into a SIEM.
-- Kerberos security depends on **detection, hardening, and continuous validation**, not just alerting on known attack tools or signatures.
+- Kerberos security depends on detection, hardening, and continuous validation, not just alerting on known attack tools or signatures.
 - Enforcing AES-only Kerberos encryption and verifying preauthentication settings reduces exposure to Kerberoasting and AS-REP roasting.
 - Service accounts remain a key identity attack surface and should be monitored, hardened, and validated through live authentication telemetry.
-- Kerberos detections can also act as **regression controls**, helping identify security drift and the return of weaker legacy configurations.
+- Kerberos detections can also act as regression controls, helping identify security drift and the return of weaker legacy configurations.
 - SOC dashboards improve visibility into authentication posture and help analysts spot risk early and respond to suspicious activity faster.
 - Linking detections, hardening controls, dashboards, and firewall validation creates a fuller identity security lifecycle that reflects real SOC operations.
 - The lab evolved from a flat network into a routed pfSense design, proving that firewall rules only enforce traffic that traverses the firewall.
 - Moving Kali to a dedicated `ATTACK_NET` subnet enabled tested segmentation between attacker tooling, Splunk, and Domain Controller services.
+- Enumeration testing with Kali improved the firewall policy by identifying additional LDAPS and NetBIOS exposure after the first LDAP and SMB blocks.
 
 ---
 
@@ -398,7 +414,9 @@ The lab has been migrated from the original flat `192.168.10.0/24` network to a 
 
 Splunk Universal Forwarder outputs have been updated to use the Splunk server address at `192.168.50.10:9997`, with TCP connectivity confirmed from both the Domain Controller and Windows client. The renewed Splunk Developer license has been applied and post-migration event ingestion has been validated from ADDC01 and TARGET-PC.
 
-Firewall rule testing has validated that pfSense can block `ATTACK_NET` access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, and Domain Controller SMB while preserving trusted Windows log forwarding and controlled DNS/Kerberos testing paths.
+Firewall rule testing has validated that pfSense can block `ATTACK_NET` access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, Domain Controller SMB, Domain Controller LDAPS, and Domain Controller NetBIOS while preserving trusted Windows log forwarding and controlled DNS/Kerberos testing paths.
+
+Kali enumeration testing also showed a practical refinement loop: identify exposed services with attacker tools, confirm exposure with `nmap`, block the traffic in pfSense, retest the result, and then validate Splunk ingestion.
 
 Current follow-up work focuses on replacing the temporary ATTACK_NET allow rule with explicit allow rules and default deny behaviour.
 
