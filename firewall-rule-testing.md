@@ -571,6 +571,99 @@ This confirmed that blocking `ATTACK_NET` access to TCP `9997` did not affect tr
 
 **Figure 24 – Splunk ingestion validated after blocking ATTACK_NET access to the Splunk receiving port**
 
+### Test 4 – Restrict ATTACK_NET Access to Domain Controller LDAP and SMB
+
+After restricting attacker subnet access to Splunk Web and the Splunk receiving port, the next control focused on direct access from `ATTACK_NET` to Domain Controller services.
+
+The goal of this test was to reduce unnecessary attacker access to high-value Domain Controller services while keeping selected identity testing paths available. DNS TCP `53` and Kerberos TCP `88` were left reachable for controlled identity testing. LDAP TCP `389` and SMB TCP `445` were selected for restriction because they can support enumeration and lateral movement activity.
+
+Before adding the new block rules, Kali was tested against the Domain Controller from the routed attacker subnet.
+
+```bash
+ping -c 4 192.168.50.20
+nc -vz 192.168.50.20 53
+nc -vz 192.168.50.20 88
+nc -vz 192.168.50.20 389
+nc -vz 192.168.50.20 445
+```
+
+The baseline showed that Kali could reach the Domain Controller over ICMP, DNS, Kerberos, LDAP, and SMB.
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | ICMP ping | Successful |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `53` DNS | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `88` Kerberos | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `389` LDAP | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `445` SMB | Open |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Kali baseline access to Domain Controller services from ATTACK_NET" src="PLACEHOLDER" />
+
+**Figure 25 – Kali baseline access to Domain Controller services from ATTACK_NET**
+
+Two new block rules were then added on the `ATTACK_NET` interface above the temporary allow rule.
+
+| Field | LDAP Rule Value | SMB Rule Value |
+|---|---|---|
+| Action | Block | Block |
+| Interface | ATTACK_NET | ATTACK_NET |
+| Protocol | IPv4 TCP | IPv4 TCP |
+| Source | ATTACK_NET subnets | ATTACK_NET subnets |
+| Destination | `192.168.50.20` | `192.168.50.20` |
+| Destination Port | `389` | `445` |
+| Description | Block ATTACK_NET access to Domain Controller LDAP | Block ATTACK_NET access to Domain Controller SMB |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="pfSense rules blocking ATTACK_NET access to Domain Controller LDAP and SMB" src="PLACEHOLDER" />
+
+**Figure 26 – pfSense rules blocking ATTACK_NET access to Domain Controller LDAP and SMB**
+
+After applying the rules and resetting pfSense states, Kali was tested again against the Domain Controller.
+
+```bash
+ping -c 4 192.168.50.20
+nc -vz 192.168.50.20 53
+nc -vz 192.168.50.20 88
+nc -vz 192.168.50.20 389
+nc -vz 192.168.50.20 445
+```
+
+The tests confirmed that LDAP and SMB were blocked from `ATTACK_NET`, while ICMP, DNS, and Kerberos remained available.
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | ICMP ping | Successful |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `53` DNS | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `88` Kerberos | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `389` LDAP | Blocked |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `445` SMB | Blocked |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Kali blocked from Domain Controller LDAP and SMB while DNS and Kerberos remain available" src="PLACEHOLDER" />
+
+**Figure 27 – Kali blocked from Domain Controller LDAP and SMB while DNS and Kerberos remain available**
+
+### Splunk Ingestion Validation After Domain Controller LDAP and SMB Block
+
+Splunk ingestion was validated after blocking attacker subnet access to Domain Controller LDAP and SMB.
+
+```spl
+index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
+| stats count by host sourcetype
+```
+
+Fresh events were still visible from both Windows hosts.
+
+| Host | Sourcetype | Count |
+|---|---|---:|
+| ADDC01 | `WinEventLog` | 171 |
+| ADDC01 | `WinEventLog:SecurityAll` | 209 |
+| TARGET-PC | `WinEventLog` | 255 |
+
+This confirmed that blocking `ATTACK_NET` access to Domain Controller LDAP and SMB did not affect trusted Windows log forwarding from the main lab subnet.
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Splunk ingestion validated after blocking ATTACK_NET access to Domain Controller LDAP and SMB" src="PLACEHOLDER" />
+
+**Figure 28 – Splunk ingestion validated after blocking ATTACK_NET access to Domain Controller LDAP and SMB**
+
 ---
 
 ## Rule Testing Methodology
@@ -624,7 +717,10 @@ index=identity sourcetype="WinEventLog:SecurityAll" earliest=-30m
 - After moving Kali to a routed subnet, pfSense successfully blocked Kali from accessing Splunk Web on TCP `8000`.
 - A second ATTACK_NET block rule was added for Splunk TCP `9997`.
 - After applying the TCP `9997` block, Kali could no longer reach Splunk Web or the Splunk receiving port, while ICMP routing to Splunk remained available.
-- Splunk ingestion from ADDC01 and TARGET-PC remained functional after both ATTACK_NET restrictions were applied.
+- Baseline testing from `ATTACK_NET` showed that Kali could reach ADDC01 over DNS, Kerberos, LDAP, and SMB.
+- Two additional ATTACK_NET block rules were added for Domain Controller LDAP TCP `389` and SMB TCP `445`.
+- After applying the Domain Controller restrictions, Kali could still reach ADDC01 over ICMP, DNS TCP `53`, and Kerberos TCP `88`, but LDAP and SMB were blocked.
+- Splunk ingestion from ADDC01 and TARGET-PC remained functional after both Splunk and Domain Controller ATTACK_NET restrictions were applied.
 
 ---
 
@@ -636,10 +732,12 @@ The initial firewall rule test showed that placing all systems behind pfSense on
 
 After moving Kali to the `ATTACK_NET` subnet, pfSense successfully blocked attacker access to Splunk Web while allowing required routing and Splunk log ingestion to continue. The follow-up TCP `9997` restriction further reduced unnecessary attacker access to SIEM infrastructure while preserving trusted Windows event forwarding from the main lab subnet.
 
+Domain Controller testing then showed that Kali could reach DNS, Kerberos, LDAP, and SMB from the attacker subnet. LDAP and SMB were blocked from `ATTACK_NET` to reduce direct attacker access to high-value Domain Controller services, while DNS and Kerberos remained available for controlled identity testing.
+
 This created a stronger foundation for future segmentation controls between attacker, endpoint, and infrastructure systems.
 
 ---
 
 ## Status
 
-Baseline testing completed. Same-subnet firewall rule limitation identified. Kali moved to a separate `ATTACK_NET` subnet. Routed firewall testing successfully blocked attacker subnet access to Splunk Web and the Splunk receiving port while preserving required Splunk ingestion.
+Baseline testing completed. Same-subnet firewall rule limitation identified. Kali moved to a separate `ATTACK_NET` subnet. Routed firewall testing successfully blocked attacker subnet access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, and Domain Controller SMB while preserving required Splunk ingestion.
