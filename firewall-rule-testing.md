@@ -637,7 +637,7 @@ The tests confirmed that LDAP and SMB were blocked from `ATTACK_NET`, while ICMP
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `389` LDAP | Blocked |
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `445` SMB | Blocked |
 
-<img width="541" height="376" alt="Kail blocked domain-controller ldap and smb" src="https://github.com/user-attachments/assets/8e45e764-805c-4b7b-9925-c1a464759ac0" />
+<img width="541" height="376" alt="Kali blocked domain-controller ldap and smb" src="https://github.com/user-attachments/assets/f12a59c8-22da-4ce9-b7cd-c46b1a71bd64" />
 
 **Figure 27 – Kali blocked from Domain Controller LDAP and SMB while DNS and Kerberos remain available**
 
