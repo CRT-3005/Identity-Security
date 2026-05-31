@@ -31,6 +31,7 @@ The firewall rule testing phase documents:
 - Kali access to infrastructure systems
 - blocked traffic validation
 - Kali enumeration tooling validation
+- ATTACK_NET least-privilege hardening
 - impact of firewall rules on detection engineering and event ingestion
 
 ---
@@ -575,6 +576,154 @@ index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
 
 ---
 
+## Test 6 – Convert ATTACK_NET to Least-Privilege Policy
+
+After validating targeted block rules from `ATTACK_NET`, the next phase was to remove the broad temporary allow rule and replace it with explicit allow rules.
+
+The purpose of this test was to move from a testing-mode policy to a least-privilege policy:
+
+```text
+Allow only approved ATTACK_NET traffic.
+Block everything else by default.
+```
+
+### Current ATTACK_NET Rule State Before Hardening
+
+Before changing the rules, the current `ATTACK_NET` policy was captured. The rule set still contained the broad temporary allow rule below the explicit block rules.
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Current ATTACK_NET rules before least privilege hardening" src="PLACEHOLDER" />
+
+**Figure 37 – Current ATTACK_NET firewall rules before least-privilege hardening**
+
+### Explicit ATTACK_NET Allow Rules
+
+The following explicit allow rules were added above the temporary allow rule and below the existing block rules.
+
+| Rule | Source | Destination | Protocol | Port | Purpose |
+|---|---|---|---|---:|---|
+| Allow DNS | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP/UDP | `53` | DNS testing and name resolution |
+| Allow Kerberos | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP/UDP | `88` | Controlled Kerberos testing |
+| Allow ICMP to ADDC01 | ATTACK_NET subnets | ADDC01 `192.168.50.20` | ICMP | Any | Routing validation |
+| Allow ICMP to Splunk | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | ICMP | Any | Routing validation |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Explicit ATTACK_NET allow rules before removing temporary allow" src="PLACEHOLDER" />
+
+**Figure 38 – Explicit ATTACK_NET allow rules added before removing the temporary allow rule**
+
+### Temporary Allow Rule Disabled
+
+After the explicit allow rules were added, the broad temporary validation rule was disabled.
+
+```text
+Disabled | Pass | Source: ATTACK_NET subnets | Destination: any | Protocol: IPv4 any
+```
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Temporary ATTACK_NET allow rule disabled" src="PLACEHOLDER" />
+
+**Figure 39 – Temporary ATTACK_NET allow rule disabled after explicit allow rules were added**
+
+### Allowed Path Validation
+
+After resetting pfSense states, Kali was used to validate that the approved paths still worked.
+
+```bash
+ping -c 4 192.168.50.20
+ping -c 4 192.168.50.10
+nmap -Pn -p 53,88 192.168.50.20
+```
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | ICMP ping | Successful |
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | ICMP ping | Successful |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `53` DNS | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `88` Kerberos | Open |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="ATTACK_NET allowed paths after temporary allow disabled" src="PLACEHOLDER" />
+
+**Figure 40 – ATTACK_NET allowed DNS, Kerberos, and ICMP paths after disabling the temporary allow rule**
+
+### Blocked Path Validation
+
+Kali was then used to confirm that previously blocked Splunk and Domain Controller paths stayed filtered after the temporary allow rule was disabled.
+
+```bash
+nmap -Pn -p 139,389,445,636 192.168.50.20
+nmap -Pn -p 8000,9997 192.168.50.10
+```
+
+| Source | Destination | Ports | Result |
+|---|---|---:|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `139`, `389`, `445`, `636` | Filtered |
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | TCP `8000`, `9997` | Filtered |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="ATTACK_NET blocked paths after temporary allow disabled" src="PLACEHOLDER" />
+
+**Figure 41 – ATTACK_NET blocked paths remain filtered after disabling the temporary allow rule**
+
+### Splunk Ingestion Validation After Least-Privilege Hardening
+
+Splunk ingestion was validated after disabling the temporary allow rule.
+
+```spl
+index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
+| stats count by host sourcetype
+```
+
+| Host | Sourcetype | Count |
+|---|---|---:|
+| ADDC01 | `WinEventLog` | 168 |
+| TARGET-PC | `WinEventLog` | 234 |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Splunk ingestion after ATTACK_NET least privilege hardening" src="PLACEHOLDER" />
+
+**Figure 42 – Splunk ingestion validated after ATTACK_NET least-privilege hardening**
+
+### Default Deny Validation
+
+Kali was then used to prove that unmatched traffic no longer passed from `ATTACK_NET`.
+
+```bash
+ping -c 4 8.8.8.8
+curl -I https://github.com --max-time 10
+nmap -Pn -p 445,3389 192.168.50.110
+```
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
+| Kali `192.168.60.100` | `8.8.8.8` | ICMP ping | Blocked |
+| Kali `192.168.60.100` | `github.com` | HTTPS curl | Failed / timed out |
+| Kali `192.168.60.100` | TARGET-PC `192.168.50.110` | TCP `445` SMB | Filtered |
+| Kali `192.168.60.100` | TARGET-PC `192.168.50.110` | TCP `3389` RDP | Filtered |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Default deny validation after ATTACK_NET least privilege hardening" src="PLACEHOLDER" />
+
+**Figure 43 – Default deny validation for unmatched ATTACK_NET traffic after least-privilege hardening**
+
+### DNS Resolution Validation
+
+A final DNS test confirmed that the explicit DNS allow rule still allowed Kali to resolve the Active Directory domain through the Domain Controller.
+
+```bash
+nslookup adproject.local 192.168.50.20
+```
+
+| Query | DNS Server | Result |
+|---|---|---|
+| `adproject.local` | ADDC01 `192.168.50.20` | Resolved to `192.168.50.20` |
+
+<img width="PLACEHOLDER" height="PLACEHOLDER" alt="DNS resolution after ATTACK_NET least privilege hardening" src="PLACEHOLDER" />
+
+**Figure 44 – DNS resolution to the Domain Controller validated after ATTACK_NET least-privilege hardening**
+
+### Test Result
+
+The least-privilege test was successful.
+
+The temporary broad allow rule was disabled, explicit allow rules preserved DNS, Kerberos, and ICMP validation paths, and unmatched traffic from `ATTACK_NET` was denied by default. Splunk ingestion from the main lab subnet remained functional after the policy change.
+
+---
+
 ## Rule Testing Methodology
 
 Each firewall rule change follows a consistent process:
@@ -621,13 +770,16 @@ index=identity sourcetype="WinEventLog:SecurityAll" earliest=-30m
 - Additional block rules were added for Domain Controller LDAPS TCP `636` and NetBIOS TCP `139`.
 - Follow-up `nmap` testing confirmed that TCP `139`, `389`, `445`, and `636` were filtered from `ATTACK_NET`.
 - DNS TCP `53` and Kerberos TCP `88` remained available for controlled identity testing after the additional restrictions.
-- Splunk ingestion from ADDC01 and TARGET-PC remained functional after all ATTACK_NET restrictions were applied.
+- Explicit allow rules were added for ATTACK_NET DNS, Kerberos, and selected ICMP validation traffic.
+- The broad temporary ATTACK_NET allow rule was disabled after the explicit allow rules were confirmed.
+- Default deny behaviour was validated by testing unmatched internet and TARGET-PC traffic from Kali.
+- Splunk ingestion from ADDC01 and TARGET-PC remained functional after all ATTACK_NET restrictions and least-privilege changes were applied.
 
 ---
 
 ## Security Outcome
 
-This phase demonstrates that the lab network can move from basic routing behind pfSense toward controlled firewall policy enforcement.
+This phase demonstrates that the lab network can move from basic routing behind pfSense toward controlled firewall policy enforcement and least-privilege segmentation.
 
 The initial firewall rule test showed that placing all systems behind pfSense on one subnet does not provide true host-to-host segmentation. To enforce attacker-to-infrastructure firewall rules, Kali had to be placed on a separate routed subnet so traffic traversed pfSense.
 
@@ -637,10 +789,14 @@ Domain Controller testing then showed that Kali could reach DNS, Kerberos, LDAP,
 
 Kali enumeration tooling then identified additional exposed Domain Controller services over LDAPS TCP `636` and NetBIOS TCP `139`. These paths were also blocked, and follow-up validation confirmed that LDAP, LDAPS, SMB, and NetBIOS were filtered from `ATTACK_NET` while DNS and Kerberos remained available.
 
-This created a stronger foundation for future least-privilege segmentation between attacker, endpoint, and infrastructure systems.
+The final hardening phase replaced the temporary broad ATTACK_NET allow rule with explicit allow rules for DNS, Kerberos, and selected ICMP validation traffic. Unmatched traffic was denied by default, and Splunk ingestion remained operational.
+
+This created a stronger foundation for least-privilege segmentation between attacker, endpoint, and infrastructure systems.
 
 ---
 
 ## Status
 
-Baseline testing completed. Same-subnet firewall rule limitation identified. Kali moved to a separate `ATTACK_NET` subnet. Routed firewall testing successfully blocked attacker subnet access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, Domain Controller SMB, Domain Controller LDAPS, and Domain Controller NetBIOS while preserving required Splunk ingestion and controlled DNS/Kerberos testing paths.
+Baseline testing completed. Same-subnet firewall rule limitation identified. Kali moved to a separate `ATTACK_NET` subnet. Routed firewall testing successfully blocked attacker subnet access to Splunk Web, the Splunk receiving port, Domain Controller LDAP, Domain Controller SMB, Domain Controller LDAPS, and Domain Controller NetBIOS.
+
+The temporary ATTACK_NET allow rule has now been disabled. Explicit allow rules preserve DNS, Kerberos, and selected ICMP validation paths. Default deny behaviour has been validated, and Splunk ingestion remains functional from the main lab subnet.
