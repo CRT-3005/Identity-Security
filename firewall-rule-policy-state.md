@@ -2,9 +2,9 @@
 
 ## Objective
 
-This document summarises the current pfSense `ATTACK_NET` firewall policy after completing routed firewall rule testing in the Identity Security lab.
+This document summarises the current pfSense `ATTACK_NET` firewall policy after completing routed firewall rule testing and least-privilege hardening in the Identity Security lab.
 
-It records the active restrictions, retained testing paths, and the next recommended hardening decision for the attacker subnet.
+It records the active restrictions, retained testing paths, disabled temporary allow rule, and current security outcome for the attacker subnet.
 
 ---
 
@@ -36,14 +36,26 @@ Kali now resides on a routed subnet, so traffic from `ATTACK_NET` to the main la
 
 ---
 
-## Retained Testing Paths
+## Active ATTACK_NET Allow Rules
 
-| Source | Destination | Port | Status | Reason |
+| Source | Destination | Port | Action | Purpose |
 |---|---|---:|---|---|
-| ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `53` | Allowed | DNS testing and name resolution validation |
-| ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `88` | Allowed | Controlled Kerberos authentication testing |
-| ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | ICMP | Allowed | Basic routing validation |
-| ATTACK_NET subnets | ADDC01 `192.168.50.20` | ICMP | Allowed | Basic routing validation |
+| ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP/UDP `53` | Pass | DNS testing and name resolution validation |
+| ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP/UDP `88` | Pass | Controlled Kerberos authentication testing |
+| ATTACK_NET subnets | ADDC01 `192.168.50.20` | ICMP | Pass | Basic routing validation to the Domain Controller |
+| ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | ICMP | Pass | Basic routing validation to Splunk |
+
+---
+
+## Disabled Temporary Allow Rule
+
+The previous broad temporary allow rule has now been disabled:
+
+```text
+Disabled | Pass | Source: ATTACK_NET subnets | Destination: any | Protocol: IPv4 any
+```
+
+This was the main least-privilege hardening step. `ATTACK_NET` no longer has broad access to the main lab subnet or the internet. Only explicitly approved traffic is allowed.
 
 ---
 
@@ -69,29 +81,50 @@ Post-rule `nmap` testing confirmed that the following Domain Controller enumerat
 | SMB | TCP `445` | Filtered |
 | LDAPS | TCP `636` | Filtered |
 
-DNS TCP `53` and Kerberos TCP `88` remained open for controlled identity testing.
+DNS TCP/UDP `53` and Kerberos TCP/UDP `88` remain available for controlled identity testing.
 
 ---
 
-## Temporary Allow Rule
+## Least-Privilege Validation Results
 
-A broad temporary allow rule remains below the explicit block rules:
+After disabling the temporary allow rule, Kali was used to validate both approved and blocked paths.
 
-```text
-Pass | Source: ATTACK_NET subnets | Destination: any | Protocol: IPv4 any
-```
+### Allowed Traffic
 
-This rule is useful while the lab is still in testing mode because it allows new traffic flows to be measured before more restrictive policy is added.
+| Source | Destination | Test | Result |
+|---|---|---|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | ICMP ping | Successful |
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | ICMP ping | Successful |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `53` DNS | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `88` Kerberos | Open |
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | DNS lookup for `adproject.local` | Successful |
 
-This is not the final least-privilege design.
+### Blocked Traffic
+
+| Source | Destination | Test | Result |
+|---|---|---|---|
+| Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `139`, `389`, `445`, `636` | Filtered |
+| Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | TCP `8000`, `9997` | Filtered |
+| Kali `192.168.60.100` | TARGET-PC `192.168.50.110` | TCP `445`, `3389` | Filtered |
+| Kali `192.168.60.100` | `8.8.8.8` | ICMP ping | Blocked |
+| Kali `192.168.60.100` | `github.com` | HTTPS curl | Failed / timed out |
+
+### Splunk Ingestion
+
+Splunk ingestion from the main lab subnet remained functional after least-privilege hardening.
+
+| Host | Sourcetype | Result |
+|---|---|---|
+| ADDC01 | `WinEventLog` | Events received |
+| TARGET-PC | `WinEventLog` | Events received |
 
 ---
 
 ## Current Security Interpretation
 
-The current policy proves that pfSense can enforce routed segmentation between the attacker subnet and the main lab subnet.
+The current policy proves that pfSense can enforce routed segmentation between the attacker subnet and the main lab subnet using a least-privilege model.
 
-The policy now blocks direct ATTACK_NET access to:
+The policy blocks direct ATTACK_NET access to:
 
 - Splunk Web
 - Splunk receiving port
@@ -99,55 +132,41 @@ The policy now blocks direct ATTACK_NET access to:
 - Domain Controller SMB
 - Domain Controller LDAPS
 - Domain Controller NetBIOS
+- TARGET-PC SMB and RDP
+- unmatched internet-bound traffic
 
 At the same time, it keeps selected paths available for testing:
 
-- DNS
-- Kerberos
-- ICMP routing validation
+- DNS to the Domain Controller
+- Kerberos to the Domain Controller
+- ICMP routing validation to ADDC01 and SPLUNK01
 
-This gives the lab a practical balance between segmentation and controlled identity testing.
-
----
-
-## Next Hardening Decision
-
-The next decision is whether to keep `ATTACK_NET` in testing mode or move it closer to least privilege.
-
-| Option | Description | Best Use |
-|---|---|---|
-| Keep temporary allow rule | Continue testing one traffic flow at a time | Best while adding more detections and validations |
-| Replace with explicit allow rules | Allow only required DNS, Kerberos, ICMP, and selected lab traffic | Best when converting this into a final segmented design |
-| Add default deny rule | Block all unmatched `ATTACK_NET` traffic after explicit allows | Best for final policy validation |
-
-For the current project stage, keeping the temporary allow rule is acceptable because firewall behaviour is still being measured and documented.
-
-The final hardening phase should replace it with explicit allow rules and default deny behaviour.
+This gives the lab a stronger segmented design while preserving controlled identity testing and trusted log forwarding.
 
 ---
 
-## Recommended Final ATTACK_NET Rule Model
+## Current ATTACK_NET Rule Model
 
-A future final policy could use this model:
+The current least-privilege policy uses this model:
 
 | Order | Action | Source | Destination | Port | Purpose |
 |---:|---|---|---|---:|---|
-| 1 | Pass | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `53` | DNS testing |
-| 2 | Pass | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `88` | Kerberos testing |
-| 3 | Pass | ATTACK_NET subnets | ADDC01 `192.168.50.20` | ICMP | Routing validation |
-| 4 | Pass | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | ICMP | Routing validation |
-| 5 | Block | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | TCP `8000` | Block Splunk Web |
-| 6 | Block | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | TCP `9997` | Block Splunk receiving port |
-| 7 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `139` | Block NetBIOS |
-| 8 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `389` | Block LDAP |
-| 9 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `445` | Block SMB |
-| 10 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `636` | Block LDAPS |
-| 11 | Block | ATTACK_NET subnets | Any | Any | Default deny |
+| 1 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `139` | Block NetBIOS |
+| 2 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `636` | Block LDAPS |
+| 3 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `445` | Block SMB |
+| 4 | Block | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP `389` | Block LDAP |
+| 5 | Block | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | TCP `9997` | Block Splunk receiving port |
+| 6 | Block | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | TCP `8000` | Block Splunk Web |
+| 7 | Pass | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP/UDP `53` | DNS testing |
+| 8 | Pass | ATTACK_NET subnets | ADDC01 `192.168.50.20` | TCP/UDP `88` | Kerberos testing |
+| 9 | Pass | ATTACK_NET subnets | ADDC01 `192.168.50.20` | ICMP | Routing validation |
+| 10 | Pass | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | ICMP | Routing validation |
+| 11 | Disabled | ATTACK_NET subnets | Any | Any | Previous temporary allow rule |
 
-The final order may change depending on later lab requirements, but the main goal is clear: move from broad testing access to explicit allowed traffic.
+Unmatched traffic is denied because no broad pass rule remains active beneath the explicit rules.
 
 ---
 
 ## Status
 
-ATTACK_NET segmentation is operational. Splunk Web, Splunk receiving, Domain Controller LDAP, SMB, LDAPS, and NetBIOS are blocked from the attacker subnet. DNS and Kerberos remain available for controlled testing. The temporary allow rule remains in place pending final least-privilege hardening.
+ATTACK_NET segmentation is operational and has been moved from testing mode to least privilege. Splunk Web, Splunk receiving, Domain Controller LDAP, SMB, LDAPS, and NetBIOS are blocked from the attacker subnet. DNS, Kerberos, and selected ICMP validation paths remain available. The temporary allow rule has been disabled, default deny behaviour has been validated, and Splunk ingestion remains functional from the main lab subnet.
