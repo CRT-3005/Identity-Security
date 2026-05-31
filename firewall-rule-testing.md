@@ -591,7 +591,7 @@ Block everything else by default.
 
 Before changing the rules, the current `ATTACK_NET` policy was captured. The rule set still contained the broad temporary allow rule below the explicit block rules.
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Current ATTACK_NET rules before least privilege hardening" src="PLACEHOLDER" />
+<img width="960" height="704" alt="Current ATTACK_NET rules before least privilege hardening" src="https://github.com/user-attachments/assets/b11035b3-73e7-4b0a-a64b-381073f284c3" />
 
 **Figure 37 – Current ATTACK_NET firewall rules before least-privilege hardening**
 
@@ -606,7 +606,7 @@ The following explicit allow rules were added above the temporary allow rule and
 | Allow ICMP to ADDC01 | ATTACK_NET subnets | ADDC01 `192.168.50.20` | ICMP | Any | Routing validation |
 | Allow ICMP to Splunk | ATTACK_NET subnets | SPLUNK01 `192.168.50.10` | ICMP | Any | Routing validation |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Explicit ATTACK_NET allow rules before removing temporary allow" src="PLACEHOLDER" />
+<img width="959" height="1013" alt="Explicit ATTACK_NET allow rules added before removing the temporary allow rule" src="https://github.com/user-attachments/assets/85c81e37-3297-4431-a5ef-29ffe5b19742" />
 
 **Figure 38 – Explicit ATTACK_NET allow rules added before removing the temporary allow rule**
 
@@ -618,7 +618,7 @@ After the explicit allow rules were added, the broad temporary validation rule w
 Disabled | Pass | Source: ATTACK_NET subnets | Destination: any | Protocol: IPv4 any
 ```
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Temporary ATTACK_NET allow rule disabled" src="PLACEHOLDER" />
+<img width="945" height="79" alt="Temporary ATTACK_NET allow rule disabled after explicit allow rules were added" src="https://github.com/user-attachments/assets/d8593abb-edf1-428c-a19a-d76ee3900c29" />
 
 **Figure 39 – Temporary ATTACK_NET allow rule disabled after explicit allow rules were added**
 
@@ -639,7 +639,7 @@ nmap -Pn -p 53,88 192.168.50.20
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `53` DNS | Open |
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `88` Kerberos | Open |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="ATTACK_NET allowed paths after temporary allow disabled" src="PLACEHOLDER" />
+<img width="525" height="500" alt="ATTACK_NET allowed paths after temporary allow rule is disabled" src="https://github.com/user-attachments/assets/4697ea51-a8f0-4281-8e06-bf573a1ebc66" />
 
 **Figure 40 – ATTACK_NET allowed DNS, Kerberos, and ICMP paths after disabling the temporary allow rule**
 
@@ -657,7 +657,7 @@ nmap -Pn -p 8000,9997 192.168.50.10
 | Kali `192.168.60.100` | ADDC01 `192.168.50.20` | TCP `139`, `389`, `445`, `636` | Filtered |
 | Kali `192.168.60.100` | SPLUNK01 `192.168.50.10` | TCP `8000`, `9997` | Filtered |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="ATTACK_NET blocked paths after temporary allow disabled" src="PLACEHOLDER" />
+<img width="525" height="370" alt="ATTACK_NET blocked paths after temporary allow rule is disabled" src="https://github.com/user-attachments/assets/be4c9b7b-1515-4866-bd62-74efaca7769a" />
 
 **Figure 41 – ATTACK_NET blocked paths remain filtered after disabling the temporary allow rule**
 
@@ -675,7 +675,7 @@ index=identity host=ADDC01 OR host=TARGET-PC earliest=-30m
 | ADDC01 | `WinEventLog` | 168 |
 | TARGET-PC | `WinEventLog` | 234 |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Splunk ingestion after ATTACK_NET least privilege hardening" src="PLACEHOLDER" />
+<img width="960" height="352" alt="Splunk ingestion after ATTACK_NET least privilege hardening" src="https://github.com/user-attachments/assets/fb6f2488-5fd8-416d-9e1b-0aaf90dae968" />
 
 **Figure 42 – Splunk ingestion validated after ATTACK_NET least-privilege hardening**
 
@@ -696,7 +696,7 @@ nmap -Pn -p 445,3389 192.168.50.110
 | Kali `192.168.60.100` | TARGET-PC `192.168.50.110` | TCP `445` SMB | Filtered |
 | Kali `192.168.60.100` | TARGET-PC `192.168.50.110` | TCP `3389` RDP | Filtered |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="Default deny validation after ATTACK_NET least privilege hardening" src="PLACEHOLDER" />
+<img width="524" height="309" alt="Default deny validation after ATTACK_NET least privilege hardening" src="https://github.com/user-attachments/assets/f728c808-605b-428c-b5ee-f7d5b104e212" />
 
 **Figure 43 – Default deny validation for unmatched ATTACK_NET traffic after least-privilege hardening**
 
@@ -712,7 +712,7 @@ nslookup adproject.local 192.168.50.20
 |---|---|---|
 | `adproject.local` | ADDC01 `192.168.50.20` | Resolved to `192.168.50.20` |
 
-<img width="PLACEHOLDER" height="PLACEHOLDER" alt="DNS resolution after ATTACK_NET least privilege hardening" src="PLACEHOLDER" />
+<img width="340" height="116" alt="DNS resolution validation after ATTACK_NET least privilege hardening" src="https://github.com/user-attachments/assets/5d85033f-afbc-42aa-bc92-9aa68b64b350" />
 
 **Figure 44 – DNS resolution to the Domain Controller validated after ATTACK_NET least-privilege hardening**
 
