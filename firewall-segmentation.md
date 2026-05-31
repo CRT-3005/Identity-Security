@@ -8,6 +8,8 @@ To improve the security architecture of the lab, I deployed a lightweight pfSens
 
 The segmentation work was later extended by moving Kali onto a dedicated `ATTACK_NET` subnet. This changed Kali-to-infrastructure traffic from same-subnet communication into routed traffic that traverses pfSense and can be filtered.
 
+The final hardening stage disabled the broad temporary `ATTACK_NET` allow rule and replaced it with explicit allow rules for DNS, Kerberos, and selected ICMP validation traffic. Unmatched `ATTACK_NET` traffic is now denied by default.
+
 ---
 
 ## Why I Added a Firewall
@@ -37,6 +39,8 @@ By introducing pfSense, I was able to:
 - support a staged migration away from the original flat network
 - validate firewall rule enforcement between routed subnets
 - test real enumeration paths from Kali
+- replace broad attacker-subnet access with explicit allow rules
+- validate default deny behaviour for unmatched attacker traffic
 - create a more realistic security model for attack simulation and detection engineering
 
 ---
@@ -89,6 +93,8 @@ pfSense WAN (em0)
 ```
 
 The current design separates Kali from the main lab subnet. Traffic from Kali to Splunk or the Domain Controller now routes through pfSense, allowing firewall rules to enforce segmentation.
+
+The `ATTACK_NET` subnet now uses a least-privilege policy. DNS, Kerberos, and selected ICMP validation paths are explicitly allowed. Unmatched traffic is denied because the temporary broad allow rule has been disabled.
 
 ---
 
@@ -439,6 +445,9 @@ Validated restrictions include:
 | ATTACK_NET | ADDC01 `192.168.50.20` | TCP `445` | Blocked |
 | ATTACK_NET | ADDC01 `192.168.50.20` | TCP `636` | Blocked |
 | ATTACK_NET | ADDC01 `192.168.50.20` | TCP `139` | Blocked |
+| ATTACK_NET | TARGET-PC `192.168.50.110` | TCP `445` | Blocked |
+| ATTACK_NET | TARGET-PC `192.168.50.110` | TCP `3389` | Blocked |
+| ATTACK_NET | Internet | Unmatched traffic | Blocked |
 
 Kali enumeration testing added extra value here. `enum4linux-ng` showed that LDAPS TCP `636` and NetBIOS TCP `139` were still exposed after the first Domain Controller rules. Those findings were then validated with `nmap`, blocked in pfSense, and retested until LDAP, LDAPS, SMB, and NetBIOS were all filtered from `ATTACK_NET`.
 
@@ -446,12 +455,14 @@ The following paths remain available for controlled testing:
 
 | Source | Destination | Port | Status |
 |---|---|---:|---|
-| ATTACK_NET | ADDC01 `192.168.50.20` | TCP `53` | Allowed |
-| ATTACK_NET | ADDC01 `192.168.50.20` | TCP `88` | Allowed |
+| ATTACK_NET | ADDC01 `192.168.50.20` | TCP/UDP `53` | Allowed |
+| ATTACK_NET | ADDC01 `192.168.50.20` | TCP/UDP `88` | Allowed |
 | ATTACK_NET | Splunk `192.168.50.10` | ICMP | Allowed |
 | ATTACK_NET | ADDC01 `192.168.50.20` | ICMP | Allowed |
 
-Splunk ingestion from ADDC01 and TARGET-PC remained functional after each firewall rule change.
+The broad temporary `ATTACK_NET` allow rule has now been disabled. This means unmatched traffic is denied by default, while approved DNS, Kerberos, and ICMP validation paths remain available.
+
+Splunk ingestion from ADDC01 and TARGET-PC remained functional after each firewall rule change and after least-privilege hardening.
 
 ---
 
@@ -500,6 +511,12 @@ Further Kali enumeration testing showed that LDAPS TCP `636` and NetBIOS TCP `13
 
 Follow-up `nmap` testing confirmed that TCP `139`, `389`, `445`, and `636` were filtered from the attacker subnet while DNS TCP `53` and Kerberos TCP `88` remained available.
 
+### Least-privilege hardening
+
+The temporary broad `ATTACK_NET` allow rule was useful during testing, but it was not suitable as a final security model.
+
+The rule was disabled after explicit allow rules were added for DNS, Kerberos, and selected ICMP validation traffic. Follow-up testing confirmed that approved paths still worked, previously blocked paths stayed filtered, and unmatched internet and TARGET-PC traffic was denied by default.
+
 ---
 
 ## Security Outcome
@@ -513,6 +530,8 @@ Adding pfSense improved the lab in several ways:
 - enabled firewall enforcement between Kali and infrastructure systems
 - validated that attacker traffic to Splunk and Domain Controller services can be restricted
 - used Kali enumeration tools to identify and close extra Domain Controller exposure
+- disabled broad attacker-subnet access after testing was complete
+- validated default deny behaviour for unmatched `ATTACK_NET` traffic
 - confirmed that Splunk ingestion still works after firewall rule changes
 - improved the realism of the environment from a blue-team and detection engineering perspective
 
@@ -522,20 +541,20 @@ This change supports security testing such as:
 - limiting direct access to Splunk management and receiving services
 - limiting direct access to high-value Domain Controller services
 - validating segmentation controls without breaking identity telemetry
-- moving toward explicit allow rules and default deny behaviour
+- demonstrating explicit allow rules and default deny behaviour
 
 ---
 
 ## Next Steps
 
-The firewall deployment, host migration, Splunk forwarder update, post-migration ingestion validation, routed attacker subnet creation, and enumeration-driven firewall rule testing have been completed.
+The firewall deployment, host migration, Splunk forwarder update, post-migration ingestion validation, routed attacker subnet creation, enumeration-driven firewall rule testing, and least-privilege hardening have been completed.
 
-The next planned steps are:
+Recommended next steps are outside this firewall segmentation document:
 
-1. replace the temporary `ATTACK_NET` allow rule with explicit allow rules
-2. add default deny behaviour for unmatched `ATTACK_NET` traffic
-3. validate that DNS, Kerberos, ICMP testing, and Splunk ingestion still work
-4. update firewall documentation after final least-privilege testing
+1. return to identity detection engineering
+2. build privileged group membership change detection
+3. use BOTSv3 for wider SPL learning and analyst workflow practice
+4. continue tuning detections and improving SOC playbooks
 
 ---
 
@@ -548,3 +567,5 @@ The migration was validated by placing Kali behind the new firewall, confirming 
 The migration was then extended to the Domain Controller, Windows client, and Splunk server. Splunk Universal Forwarder outputs were updated to use `192.168.50.10:9997`, and post-migration ingestion was validated from both Windows hosts.
 
 The segmentation design was then improved by moving Kali to the dedicated `192.168.60.0/24` `ATTACK_NET` subnet. This allowed pfSense to enforce routed firewall rules against Splunk Web, the Splunk receiving port, Domain Controller LDAP, SMB, LDAPS, and NetBIOS while preserving controlled DNS, Kerberos, ICMP, and trusted log forwarding paths.
+
+The final hardening step disabled the temporary broad `ATTACK_NET` allow rule. The attacker subnet now uses explicit allow rules for DNS, Kerberos, and selected ICMP validation traffic, with default deny behaviour for unmatched traffic.
